@@ -158,13 +158,31 @@ var lastArgument = window.process.argv[length-1]
 			 setFavoriteButton.onclick = setFavorit;
 			 controls.appendChild(setFavoriteButton);
 			 function setFavorit(event) {
-					
-                   	let favURL = document.getElementById('nav-ctrls-url').value ;
+				try {
+					// SECURITY: Sanitize URL input before setting as favorite
+                   	let favURL = document.getElementById('nav-ctrls-url').value;
+
+					// Basic URL validation
+					if (!favURL || favURL.trim() === '') {
+						console.warn('Empty URL provided');
+						return;
+					}
+
+					// Sanitize and validate URL format
+					favURL = favURL.trim();
+					if (!favURL.match(/^(https?:\/\/|file:\/\/\/)/i)) {
+						console.warn('Invalid URL protocol:', favURL);
+						return;
+					}
+
 					console.log("set fav" + favURL);
 					const { remote } = require('electron');
 					const mainProcess = remote.require('./index');
-					mainProcess.setFavorite(favURL); // 'Yay'    
-                 } 
+					mainProcess.setFavorite(favURL);
+				} catch (error) {
+					console.error('Error setting favorite:', error);
+				}
+			 } 
 				 
 // Set Home
 let setHomeButton = document.createElement("button");
@@ -173,12 +191,31 @@ let setHomeButton = document.createElement("button");
 			 setHomeButton.title = 'Set as hompage';
 			 setHomeButton.onclick = setHome;
 			 controls.appendChild(setHomeButton);
-			 function setHome(event) {					
-                    let homeURL =  document.getElementById('nav-ctrls-url').value;
+			 function setHome(event) {
+				try {
+					// SECURITY: Sanitize URL input before setting as homepage
+                    let homeURL = document.getElementById('nav-ctrls-url').value;
+
+					// Basic URL validation
+					if (!homeURL || homeURL.trim() === '') {
+						console.warn('Empty URL provided');
+						return;
+					}
+
+					// Sanitize and validate URL format
+					homeURL = homeURL.trim();
+					if (!homeURL.match(/^(https?:\/\/|file:\/\/\/)/i)) {
+						console.warn('Invalid URL protocol:', homeURL);
+						return;
+					}
+
 					const { remote } = require('electron');
 					const mainProcess = remote.require('./index');
-					mainProcess.sethome(homeURL); // 'Yay' 
-                 } 
+					mainProcess.sethome(homeURL);
+				} catch (error) {
+					console.error('Error setting homepage:', error);
+				}
+			 } 
 //Zoom In out
 let zoomInButton = document.createElement("button");
 			 zoomInButton.id = 'fs-button';
@@ -280,11 +317,14 @@ let muteButton = document.createElement("button");
 
 ///// Clear Favorites Button ////
 			 function clearAllFavorites(event) {
-							const { remote } = require('electron');
-							const mainProcess = remote.require('./index.js');
-							mainProcess.removeAllFav(); 
-							console.log("Cleaned favorites")
-			
+				try {
+					const { remote } = require('electron');
+					const mainProcess = remote.require('./index.js');
+					mainProcess.removeAllFav();
+					console.log("Cleaned favorites")
+				} catch (error) {
+					console.error('Error clearing favorites:', error);
+				}
             }
 
 /////Settings Button /////	
@@ -296,13 +336,15 @@ let muteButton = document.createElement("button");
 			 settingsButton.onclick = showSettings;
 			 controls.appendChild(settingsButton);
 			 function showSettings(event) {
-                   
-                    if(event.type === 'click'){
-							const { remote } = require('electron');
-							const mainProcess = remote.require('./index');
-									mainProcess.showSettings(); // 'Yay' 
-							
-                    }
+				try {
+					if(event.type === 'click'){
+						const { remote } = require('electron');
+						const mainProcess = remote.require('./index');
+						mainProcess.showSettings();
+					}
+				} catch (error) {
+					console.error('Error showing settings:', error);
+				}
             }
 
 
@@ -327,21 +369,21 @@ let muteButton = document.createElement("button");
 
 
 function handleDoubleClick (event) {
-	//var windowsControls = document.getElementById('window-controls');
-	//windowsControls.style = "display: true;";
-
-	
-	  const doubleClickAction = remote.systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string');
-  const win = remote.getCurrentWindow();
-  if (doubleClickAction === 'Minimize') {
-    win.minimize();
-  } else if (doubleClickAction === 'Maximize') {
-    if (!win.isMaximized()) {
-      win.maximize();
-    } else {
-      win.unmaximize();
-    }
-  }
+	try {
+		const doubleClickAction = remote.systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string');
+		const win = remote.getCurrentWindow();
+		if (doubleClickAction === 'Minimize') {
+			win.minimize();
+		} else if (doubleClickAction === 'Maximize') {
+			if (!win.isMaximized()) {
+				win.maximize();
+			} else {
+				win.unmaximize();
+			}
+		}
+	} catch (error) {
+		console.error('Error handling double click:', error);
+	}
 }
 			
 
@@ -402,10 +444,14 @@ function makeUL(array) {
 			btn.id = i;
 			btn.style = "border: none; background: none; color: hotpink;  background-color: #222222;  margin-left: 30px; ";
 			btn.onclick = function (event) {
+				try {
 					const { remote } = require('electron');
 					const mainProcess = remote.require('./index');
-					mainProcess.removeFav(event.target.id); // 'Yay' 
-					};
+					mainProcess.removeFav(event.target.id);
+				} catch (error) {
+					console.error('Error removing favorite:', error);
+				}
+			};
 
 		item.style = 'color:hotpink;font-size: 23px;'
 		item.appendChild(a);
@@ -466,20 +512,31 @@ navBar.addEventListener('keyup', checkFavorites);
 
 //Find on Page	
 let finInwebview = document.getElementById('nav-body-views').getElementsByClassName("active")[0];
-const FindInPage = require('electron-find').FindInPage;
-const { remote } = require('electron');
-let findInPage = new FindInPage(remote.getCurrentWebContents(), {
- parentElement:document.querySelector('#nav-body-views'), offsetTop : 70, boxBgColor :'#000000', boxShadowColor  :'#111111'
-});
+let findInPage;
+
+try {
+	const FindInPage = require('electron-find').FindInPage;
+	const { remote } = require('electron');
+	findInPage = new FindInPage(remote.getCurrentWebContents(), {
+		parentElement:document.querySelector('#nav-body-views'), offsetTop : 70, boxBgColor :'#000000', boxShadowColor  :'#111111'
+	});
+} catch (error) {
+	console.error('Error initializing FindInPage:', error);
+}
 
 
 ipcRenderer.on('on-find', (e, args) => {
 	
 
 
-  findInPage.openFindWindow();
-  console.log(223 + document.querySelector('#nav-body-views'));
-  
+	try {
+		if (findInPage) {
+			findInPage.openFindWindow();
+			console.log(223 + document.querySelector('#nav-body-views'));
+		}
+	} catch (error) {
+		console.error('Error opening find window:', error);
+	}
 })
 
 

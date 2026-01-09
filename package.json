@@ -18,20 +18,23 @@
     "buildWin64": "electron-packager . FlashBrowser --platform=win32 --overwrite --icon=icon.ico -p always --prune-license nm-prune --force"
   },
   "license": "ISC",
+  "engines": {
+    "node": ">=12.14.0 <16.0.0"
+  },
   "devDependencies": {
     "electron": "^9.4.4",
-    "electron-builder": "^22.9.1",
-    "electron-packager": "^15.4.0"
+    "electron-builder": "^22.14.13",
+    "electron-packager": "^15.5.2"
   },
   "dependencies": {
     "@cliqz/adblocker-electron": "^1.23.0",
-    "cross-fetch": "^3.1.4",
-    "electron-context-menu": "^3.1.1",
-    "electron-dl": "^3.3.1",
+    "cross-fetch": "^3.2.0",
+    "electron-context-menu": "^3.6.1",
+    "electron-dl": "^3.5.2",
     "electron-find": "^1.0.7",
     "electron-navigation": "^6.6.6",
     "electron-version": "^2.0.1",
-    "resolve-dependencies": "^6.0.7"
+    "resolve-dependencies": "^6.0.9"
   },
   "repository": {
     "type": "git",

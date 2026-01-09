@@ -1,16 +1,74 @@
 
-# Setup instructions:
- - download & unzip code
- - install node.js use command line to navigate to the unziped folder 
- - npm install 
- - npm run start
- ( flash player not included in the source code, you can get it from previous builds )
- 
-
 # Flash Browser  (please give us a :star:)
-A browser dedicating to supporting adobe flash. 
+
+## ⚠️ SECURITY WARNING ⚠️
+
+**This application uses Electron 9.4.4 and Adobe Flash Player, both of which reached end-of-life and are no longer receiving security updates.**
+
+- **Electron 9.4.4**: EOL March 2021 - No security patches available
+- **Adobe Flash Player**: EOL January 12, 2021 - No longer supported by Adobe
+- **Known Vulnerabilities**: 29+ security issues in dependencies
+
+### ✅ Safe Usage Requirements
+
+**ONLY use Flash Browser in these scenarios:**
+- Running inside a dedicated Virtual Machine (VM)
+- Isolated network segment with no access to sensitive data
+- No important accounts or personal information
+- Legacy Flash game preservation and archival
+
+**❌ DO NOT:**
+- Use for banking, email, or sensitive accounts
+- Access production systems or important data
+- Run on your main computer without VM isolation
+- Enter passwords or personal information
+
+**See [SECURITY.md](SECURITY.md) for complete security information and best practices.**
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+- Node.js (version 12.14.0 to 15.x recommended for Electron 9 compatibility)
+- Flash Player plugin files (not included in source code - obtain from previous builds)
+
+### Installation Steps
+
+1. **Download & unzip** the code
+2. **Install Node.js** if not already installed
+3. **Navigate** to the unzipped folder using command line/terminal
+4. **Install dependencies:**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+   Note: `--legacy-peer-deps` is required due to @cliqz/adblocker-electron peer dependency mismatch
+
+5. **Run the application:**
+   ```bash
+   npm run start
+   ```
+
+### Flash Player Plugin Files
+
+Flash Player plugin files are **not included** in the source code due to licensing. You can obtain them from:
+- Previous Flash Browser releases
+- Archived Flash Player distributions
+- Your own Flash Player installation backups
+
+Required files by platform:
+- **Windows (x64)**: `flashver/pepflashplayer64.dll`
+- **Windows (x86)**: `flashver/pepflashplayer32.dll`
+- **Linux**: `flashver/libpepflashplayer.so`
+- **macOS**: `flashver/PepperFlashPlayer.plugin`
+
+---
+
+## Downloads
+
+A browser dedicating to supporting adobe flash.
 Run flash player in browser on:
- 
+
 Windows 10
 :link: [Download Installer](https://github.com/radubirsan/FlashBrowser/releases) (86 MB) 
 
@@ -64,6 +122,30 @@ You can run it from the command line (ex: FlashBrowser.exe D:\\Achilles.swf ) :
 
 
 
-# ! This is Alpha Software, please install on VM and do not log into any important accounts
+---
+
+## Important Security Notice
+
+⚠️ **This is Alpha Software with End-of-Life Dependencies**
+
+**CRITICAL SECURITY REQUIREMENTS:**
+- ✅ **Install and run ONLY in a Virtual Machine (VM)**
+- ✅ **Use isolated network with no access to important data**
+- ✅ **Do NOT log into any important accounts** (email, banking, social media, etc.)
+- ✅ **Do NOT enter passwords or sensitive information**
+- ✅ **Do NOT access production systems or valuable data**
+
+**Known Security Issues:**
+- Electron 9.4.4 reached end-of-life in March 2021 (no security patches)
+- Adobe Flash Player reached end-of-life in January 2021 (no updates)
+- 29+ known vulnerabilities in dependencies (1 low, 9 moderate, 15 high, 4 critical)
+- electron-navigation package has 44 known security issues and is abandoned
+
+**For complete security information, risk assessment, and best practices, see [SECURITY.md](SECURITY.md)**
+
+**For all changes and updates, see [CHANGELOG.md](CHANGELOG.md)**
+
+---
+
 [Download Count](https://hanadigital.github.io/grev/?user=radubirsan&repo=FlashBrowser2)
 

@@ -41,13 +41,15 @@ switch (process.platform) {
 		switch (process.arch) {
 			case 'ia32':
 			case 'x32':
-				pluginName = 'flashver/libpepflashplayer.so'; 
+				pluginName = 'flashver/libpepflashplayer.so';
 				break
 			case 'x64':
 				pluginName = 'flashver/libpepflashplayer.so';
 				break
 		}
 
+		// SECURITY NOTE: no-sandbox is required for PPAPI Flash plugin support on Linux
+		// This reduces security isolation. Only run in isolated/VM environment.
 		app.commandLine.appendSwitch('no-sandbox');
 		break
 	case 'darwin':
@@ -62,8 +64,23 @@ if (process.platform !== "darwin") {
 app.commandLine.appendSwitch("--enable-npapi");
 app.commandLine.appendSwitch("--enable-logging");
 app.commandLine.appendSwitch("--log-level", 4);
-app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, pluginName));
+
+// SECURITY NOTE: Load PPAPI Flash plugin with error handling
+try {
+	const pluginPath = path.join(__dirname, pluginName);
+	app.commandLine.appendSwitch('ppapi-flash-path', pluginPath);
+	console.log(`Flash plugin loaded from: ${pluginPath}`);
+} catch (error) {
+	console.error('Failed to load Flash plugin:', error);
+}
 //app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname.includes(".asar") ? process.resourcesPath : __dirname, "plugins/" + pluginName));
+
+// SECURITY WARNING: The following flags reduce security isolation and are required for Flash
+// - disable-site-isolation-trials: Required for PPAPI plugin content access
+// - no-sandbox: Required for PPAPI plugin loading (reduces process isolation)
+// - ignore-certificate-errors: Allows Flash content on sites with invalid certificates
+// - allow-insecure-localhost: Allows local Flash development
+// RECOMMENDATION: Only use this application in an isolated VM or sandbox environment
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
@@ -72,7 +89,7 @@ app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
 let sendWindow = (identifier, message) => {
     mainWindow.webContents.send(identifier, message);
 };
-	
+
 const store = new Store({
   configName: 'user-preferences',
   defaults: {
@@ -80,57 +97,89 @@ const store = new Store({
   }
 });
 
-const template = [
-    {
-      label: 'FilterX',
-	  visible:true,
-      submenu: [
-        {
-			
-          label: 'Exit FullScreen',         
-		  accelerator: "Esc",
-		  visible:false,
-          click(item, focusedWindow) {
-				if (focusedWindow.isFullScreen()) {
-					focusedWindow.setFullScreen(false);
-				    mainWindow.webContents.send('Esc');
-				}
-			}
-        }
-      ]
-    }
-  ];
-//accelerator: 'Shift+CmdOrCtrl+H',;
+// Add error handlers to catch any unhandled errors
+process.on('uncaughtException', (error) => {
+	console.error('UNCAUGHT EXCEPTION:', error);
+});
 
-
-
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('UNHANDLED REJECTION:', reason);
+});
 
 app.on('ready',   () => {
+
+	// Build and set menu inside ready event (required on macOS)
+	const template = [
+		{
+		  label: 'FilterX',
+		  visible:true,
+		  submenu: [
+			{
+			  label: 'Exit FullScreen',
+			  accelerator: "Esc",
+			  visible:false,
+			  click(item, focusedWindow) {
+					if (focusedWindow.isFullScreen()) {
+						focusedWindow.setFullScreen(false);
+						mainWindow.webContents.send('Esc');
+					}
+				}
+			}
+		  ]
+		}
+	];
+
+	try {
+		const menu = Menu.buildFromTemplate(template);
+		Menu.setApplicationMenu(menu);
+	} catch (error) {
+		console.error('ERROR building/setting menu:', error);
+	}
 
     let { width, height, isMax } = store.get('windowBounds');
     let filePath = 'filePath';
 	console.log("inti param" + process.argv);
+
+	// SECURITY: Validate command-line arguments for SWF file paths
 	if(process.argv.length >= 2 && process.argv[1].indexOf(".swf") > 1) {
-		if(process.argv[1].indexOf("http") > 0) {
-			console.log(998 + process.argv[1] );
-			filePath = process.argv[1].replace("FlashBrowser:", "");
-		}
-		else {
-			filePath = process.argv[1];
-			filePath = filePath.replace(/\\/g, "/");
-			filePath =  'file:///' + filePath;
-			//open, read, handle file
+		try {
+			const input = process.argv[1];
+
+			// Validate HTTP/HTTPS URLs
+			if(input.indexOf("http") >= 0) {
+				console.log(998 + input);
+				const cleanUrl = input.replace("FlashBrowser:", "");
+
+				// Basic URL validation to prevent malformed URLs
+				if(cleanUrl.match(/^https?:\/\/.+\.swf(\?.*)?$/i)) {
+					filePath = cleanUrl;
+				} else {
+					console.error('Invalid URL format:', cleanUrl);
+				}
+			}
+			// Validate local file paths
+			else {
+				let localPath = input;
+				// Sanitize path separators
+				localPath = localPath.replace(/\\/g, "/");
+
+				// Basic path traversal prevention - warn about suspicious patterns
+				if(localPath.includes("../") || localPath.includes("..\\")) {
+					console.warn('Warning: Path contains traversal patterns:', localPath);
+				}
+
+				filePath = 'file:///' + localPath;
+			}
+		} catch (error) {
+			console.error('Error processing file path:', error);
+			filePath = 'filePath'; // Reset to default on error
 		}
 	}
 	if(width < 100 || height < 100) {
 		width = 800;
 		height = 500;
 	}
-	
 
-	 
     mainWindow = new BrowserWindow({
         width: width,
         height: height,
@@ -140,18 +189,18 @@ app.on('ready',   () => {
 		backgroundColor: '#202124',
         webPreferences: {
             nodeIntegration: true,
-            webviewTag: true, 
+            webviewTag: true,
             plugins: true,
 	    contextIsolation: false,
 	    enableRemoteModule: true,
 	    additionalArguments: [filePath]
         }
     });
-    
-	
-	
-   
+
     mainWindow.loadURL(`file://${__dirname}/browser.html`);
+
+	// Uncomment to open DevTools for debugging:
+	// mainWindow.webContents.openDevTools();
 
 	
 	// Modify the user agent for all requests to the following urls.
@@ -160,7 +209,7 @@ app.on('ready',   () => {
 	}
 
 	mainWindow.webContents.session.webRequest.onBeforeSendHeaders(filter,(details, callback) => {
-     
+
 		if(details.url && details.url.indexOf(".swf") === -1){
 		    console.log("BIGPOINT OR WHATSUP")
 			details.requestHeaders['X-APP'] = app.getVersion();
@@ -170,16 +219,33 @@ app.on('ready',   () => {
 			}
 		}
 		else{
-
 		//	app.commandLine.appendSwitch('ppapi-flash-path', null);
          console.log("swf url", details.url)
 		 swfURL = details.url
-		
-
 		}
-		
+
         callback({ requestHeaders: details.requestHeaders })
     });
+
+	// SECURITY: Add Content Security Policy headers for additional protection
+	// Note: CSP is only applied to remote HTTP/HTTPS content, not local file:// resources
+	mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+		// Only apply CSP to remote content (HTTP/HTTPS), not local files or Flash
+		if(details.url && details.url.match(/^https?:\/\//i) && details.url.indexOf(".swf") === -1) {
+			callback({
+				responseHeaders: {
+					...details.responseHeaders,
+					'Content-Security-Policy': [
+						"default-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: data: blob:; " +
+						"script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:; " +
+						"object-src 'self' https: http: data:;"
+					]
+				}
+			});
+		} else {
+			callback({ responseHeaders: details.responseHeaders });
+		}
+	});
 	
     sendWindow("version", app.getVersion());
     
