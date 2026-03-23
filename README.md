@@ -4,7 +4,7 @@
 ## ⚠️ SECURITY WARNING ⚠️
 
 **This application uses Electron 9.4.4 and Adobe Flash Player, both of which reached end-of-life and are no longer receiving security updates.**
-
+- X
 - **Electron 9.4.4**: EOL March 2021 - No security patches available
 - **Adobe Flash Player**: EOL January 12, 2021 - No longer supported by Adobe
 - **Known Vulnerabilities**: 29+ security issues in dependencies
