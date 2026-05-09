@@ -62,8 +62,8 @@ if (process.platform !== "darwin") {
 	//app.commandLine.appendSwitch('force-device-scale-factor', "1");
 }
 app.commandLine.appendSwitch("--enable-npapi");
-app.commandLine.appendSwitch("--enable-logging");
-app.commandLine.appendSwitch("--log-level", 4);
+//app.commandLine.appendSwitch("--enable-logging");
+//app.commandLine.appendSwitch("--log-level", 4);
 
 // SECURITY NOTE: Load PPAPI Flash plugin with error handling
 try {
@@ -108,73 +108,51 @@ process.on('unhandledRejection', (reason, promise) => {
 
 app.on('ready',   () => {
 
-	// Build and set menu inside ready event (required on macOS)
-	const template = [
-		{
-		  label: 'FilterX',
-		  visible:true,
-		  submenu: [
-			{
-			  label: 'Exit FullScreen',
-			  accelerator: "Esc",
-			  visible:false,
-			  click(item, focusedWindow) {
-					if (focusedWindow.isFullScreen()) {
-						focusedWindow.setFullScreen(false);
-						mainWindow.webContents.send('Esc');
-					}
-				}
-			}
-		  ]
-		}
-	];
-
-	try {
-		const menu = Menu.buildFromTemplate(template);
-		Menu.setApplicationMenu(menu);
-	} catch (error) {
-		console.error('ERROR building/setting menu:', error);
+	// --- NEAT FLASH BROWSER: SYSTEM DEFAULT HANDLER ---
+	// Ask Windows to make this the default browser for web links
+	if (!app.isDefaultProtocolClient('http')) {
+		app.setAsDefaultProtocolClient('http');
 	}
+
+	// --- NEAT FLASH BROWSER: HTTPS KICK-OUT BOUNCER ---
+	// Listen to every single tab and window created in the app
+	app.on('web-contents-created', (event, contents) => {
+		
+		// Catch standard clicks that try to change the current page
+		contents.on('will-navigate', (navEvent, navigationUrl) => {
+			if (navigationUrl.startsWith('https://')) {
+				navEvent.preventDefault(); // Block NeatFlashBrowser from opening it
+				require('electron').shell.openExternal(navigationUrl); // Hand it to Windows
+			}
+		});
+
+		// Catch "Open in New Tab" or "_blank" links
+		contents.on('new-window', (navEvent, navigationUrl) => {
+			if (navigationUrl.startsWith('https://')) {
+				navEvent.preventDefault(); 
+				require('electron').shell.openExternal(navigationUrl); 
+			}
+		});
+	});
+
+	Menu.setApplicationMenu(null);
 
     let { width, height, isMax } = store.get('windowBounds');
     let filePath = 'filePath';
 	console.log("inti param" + process.argv);
 
-	// SECURITY: Validate command-line arguments for SWF file paths
-	if(process.argv.length >= 2 && process.argv[1].indexOf(".swf") > 1) {
-		try {
-			const input = process.argv[1];
+	// Locate where you catch the URL and Title
+	const passedUrl = process.argv.find(arg => arg.startsWith('http://') || arg.startsWith('https://'));
+	const titleArg = process.argv.find(arg => arg.startsWith('--title='));
 
-			// Validate HTTP/HTTPS URLs
-			if(input.indexOf("http") >= 0) {
-				console.log(998 + input);
-				const cleanUrl = input.replace("FlashBrowser:", "");
+	// Use a safe fallback for the title
+	let passedTitle = titleArg ? titleArg.replace('--title=', '') : 'NeatFlashBrowser';
+	let safeUrl = passedUrl ? passedUrl.replace("FlashBrowser:", "").replace("FlashyBrowser:", "") : "none";
 
-				// Basic URL validation to prevent malformed URLs
-				if(cleanUrl.match(/^https?:\/\/.+\.swf(\?.*)?$/i)) {
-					filePath = cleanUrl;
-				} else {
-					console.error('Invalid URL format:', cleanUrl);
-				}
-			}
-			// Validate local file paths
-			else {
-				let localPath = input;
-				// Sanitize path separators
-				localPath = localPath.replace(/\\/g, "/");
+	// BULLETPROOFING: Encode the strings so spaces/brackets don't crash the Chromium C++ Engine
+	let encodedTitle = encodeURIComponent(passedTitle);
+	let encodedUrl = encodeURIComponent(safeUrl);
 
-				// Basic path traversal prevention - warn about suspicious patterns
-				if(localPath.includes("../") || localPath.includes("..\\")) {
-					console.warn('Warning: Path contains traversal patterns:', localPath);
-				}
-
-				filePath = 'file:///' + localPath;
-			}
-		} catch (error) {
-			console.error('Error processing file path:', error);
-			filePath = 'filePath'; // Reset to default on error
-		}
-	}
 	if(width < 100 || height < 100) {
 		width = 800;
 		height = 500;
@@ -183,17 +161,19 @@ app.on('ready',   () => {
     mainWindow = new BrowserWindow({
         width: width,
         height: height,
-		titleBarStyle: 'hidden',
-		frame: true,
-		show:true,
-		backgroundColor: '#202124',
+        title: passedTitle,
+        frame: false, 
+        transparent: false,
+        show: true,
+        backgroundColor: '#202124',
         webPreferences: {
             nodeIntegration: true,
             webviewTag: true,
             plugins: true,
-	    contextIsolation: false,
-	    enableRemoteModule: true,
-	    additionalArguments: [filePath]
+            contextIsolation: false,
+            enableRemoteModule: true,
+			// Pass them as strictly formatted Chromium flags
+			additionalArguments: [`--neat-url=${encodedUrl}`, `--neat-title=${encodedTitle}`]
         }
     });
 
@@ -253,10 +233,7 @@ app.on('ready',   () => {
         mainWindow = null;
     });
 	
-	
-	
 
-	
 	 
 	mainWindow.once('ready-to-show', () => {
 		if(isMax) {	
@@ -317,13 +294,6 @@ app.on('ready',   () => {
 			mainWindow.webContents.send('on-find');
 			});
 			
-			
-			//globalShortcut.register("F11", toggleWindowFullScreen);
-			//globalShortcut.register("Escape", () => mainWindow.setFullScreen(true));
-
-
-
-		
 
 		   function toggleWindowFullScreen(){
 				mainWindow.setFullScreen(!mainWindow.isFullScreen())
@@ -377,17 +347,6 @@ app.on('ready',   () => {
 		
 	mainWindow.webContents.zoomFactor = 1;
 	
-		
-
-	var {ElectronBlocker} = require('@cliqz/adblocker');
-	var {fetch} = require('cross-fetch');
-	//ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker)=>{	
-	//	blocker.enableBlockingInSession(mainWindow.webContents.session);
-	//	//console.log("--AddBlcoker started" + mainWindow.webContents.session);
-	//});
-
-
-
 	
 });
 
@@ -405,59 +364,62 @@ function homeSetter(a){
 	 console.log("Favorite url:" + a);
 };
 
-exports.setFavorite = (a) => favoriteSetter(a);
-	
-function favoriteSetter(a){
-     let fav =  store.get('favorites');
-	 if(fav && fav.indexOf(a) ==-1 ) {
-	     fav.push(a);
-		 store.set('favorites', fav);
-		 settingsShow(true)
-	 }
-	 else{
-		 fav =  new Array()// [a]
-		 store.set('favorites', fav);
-	 }
+// ==========================================
+// --- NEAT FLASH BROWSER: FAVORITES SYSTEM ---
+// ==========================================
+
+// 1. Auto-Save from Botfather
+exports.autoSaveFavorite = (url, title) => {
+    let favs = store.get('favorites') || [];
     
-	 console.log("S url:" + fav.indexOf(a));
+    // Upgrade any old plain-string URLs to objects
+    favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
+
+    // Check if we already saved this exact URL
+    let existingIndex = favs.findIndex(f => f.url === url);
+    
+    if (existingIndex === -1) {
+        favs.push({ url: url, title: title }); // Add new Botfather link
+    } else {
+        favs[existingIndex].title = title; // Update title if it changed
+    }
+    store.set('favorites', favs);
 };
 
-exports.removeAllFav = (a) => removeAllFav(a);
-
-function removeAllFav(){
+// 2. Manual Save (When you click the Star button)
+exports.setFavorite = (url) => {
+    let favs = store.get('favorites') || [];
+    favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
     
-	 let fav2 = [] 
-	
-	 store.set('favorites', fav2);
-	 settingsShow(true)
-	 console.log("removeAllFav" );
-	
+    if(favs.findIndex(f => f.url === url) === -1) {
+        favs.push({ url: url, title: 'Manual Bookmark' });
+        store.set('favorites', favs);
+        settingsShow(true);
+    }
 };
 
+// 3. Remove Single Favorite
+exports.removeFav = (index) => {
+    let favs = store.get('favorites') || [];
+    let updatedFavs = []; 
+    for (var i = 0; i < favs.length; i++){
+        if (i !== index) updatedFavs.push(favs[i]);
+    }
+    store.set('favorites', updatedFavs);
+    settingsShow(true);
+};
 
-exports.removeFav = (a) => removeFav(a);
-
-function removeFav(a){
-     let fav =  store.get('favorites');
-	 let fav2 = [] 
-	 for ( var i=0; i<fav.length; i++){
-		if(i!=a && typeof fav[i] === 'string'){
-			fav2.push(fav[i])
-		}
-	 }
-	 store.set('favorites', fav2);
-	 settingsShow(true)
-	 console.log("removeFav" + a + fav2.length);
-	
+// 4. Remove All Favorites
+exports.removeAllFav = () => {
+    store.set('favorites', []);
+    settingsShow(true);
 };
 
 exports.showSettings = (a) => settingsShow(a);
-	
-function settingsShow(a){
-	let fav =  store.get('favorites');
-	mainWindow.webContents.send('ping', fav, a);
-};
-
+function settingsShow(a) {
+    let fav = store.get('favorites');
+    mainWindow.webContents.send('ping', fav, a);
+}
 
 app.on('window-all-closed', () => {
     //if (process.platform !== 'darwin') {
