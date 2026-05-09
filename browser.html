@@ -17,14 +17,17 @@
             
             <h2 style="margin-top: 0; text-align: center;">⚙️ Settings & Favorites</h2>
             <hr style="border: 1px solid #444; margin-bottom: 20px;">
-            
-            <div id="favoritesDiv" style="margin-bottom: 20px;"></div>
-            
+            <button onclick="makeDefaultBrowser()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #0275d8; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🌐 Set as Default HTTP Browser</button>
+             
             <button onclick="dispachClearCache()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #d9534f; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🗑️ Clear Cache & Restart</button>
             <button onclick="clearAllFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #f0ad4e; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">⚠️ Clear All Favorites</button>
             <button onclick="document.getElementById('overlay').style.display='none'" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #5cb85c; border: none; padding: 10px; width: 100%; border-radius: 5px;">✅ Close Menu</button>
         
         </div>
+    </div>
+
+    <div id="fav-dropdown" style="display: none; position: absolute; top: 40px; right: 100px; width: 260px; background-color: #2b2b2b; border: 1px solid #555; border-radius: 5px; box-shadow: 0px 5px 15px rgba(0,0,0,0.8); z-index: 1000; color: white; padding: 15px; max-height: 500px; overflow-y: auto;">
+        <div id="fav-dropdown-content"></div>
     </div>
 
     <div id="neat-header" style="display: flex; flex-direction: row; align-items: center; background-color: #202124; height: 35px; -webkit-app-region: drag;">
@@ -158,10 +161,147 @@
             if (url) remote.require('./index').sethome(url);
         });
 
-        addControlBtn('⭐️', 'Set as Favorite', () => {
-            let url = document.getElementById('nav-ctrls-url').value;
-            if (url) remote.require('./index').setFavorite(url);
+        // --- SMART FAVORITES DROPDOWN ENGINE ---
+        addControlBtn('⭐️', 'Favorites Menu', (e) => {
+            let favMenu = document.getElementById('fav-dropdown');
+            if (favMenu.style.display === 'block') {
+                favMenu.style.display = 'none';
+            } else {
+                renderFavDropdown();
+                favMenu.style.display = 'block';
+            }
+            e.stopPropagation(); // Stop click from immediately closing the menu
         });
+
+        function renderFavDropdown() {
+            let container = document.getElementById('fav-dropdown-content');
+            container.innerHTML = ""; // Wipe it clean
+            
+            // 1. The "Add Current Tab" Button
+            let addBtn = document.createElement('button');
+            addBtn.innerHTML = "➕ Add Current Tab to Favorites";
+            addBtn.style.cssText = "width: 100%; padding: 8px; background: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 15px; font-weight: bold;";
+            addBtn.onclick = () => {
+                let activeTab = document.querySelector('webview.active');
+                if (activeTab) {
+                    let url = activeTab.getURL();
+                    let title = activeTab.getTitle();
+                    
+                    // Save directly to the local store to avoid triggering the backend Settings UI!
+                    let favs = store.get('favorites') || [];
+                    favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f); // Fallback for ancient links
+                    
+                    let existing = favs.findIndex(f => f.url === url);
+                    if (existing === -1) {
+                        favs.push({ url: url, title: title });
+                    } else {
+                        favs[existing].title = title;
+                    }
+                    store.set('favorites', favs);
+                    renderFavDropdown(); // Refresh the dropdown instantly
+                }
+            };
+            container.appendChild(addBtn);
+
+            // 2. Fetch and Group by Server
+            let favs = store.get('favorites') || [];
+            let groups = {};
+            
+            favs.forEach((fav, originalIndex) => {
+                let url = typeof fav === 'string' ? fav : fav.url;
+                let title = (typeof fav === 'string' ? 'Saved Link' : fav.title) || 'Saved Link';
+                
+                let server = "Other";
+                let name = title;
+                
+                // PARSER: Looks for "[SS82] CDub" and splits it into Server and Lordname
+                let match = title.match(/^\[(.*?)\]\s*(.*)$/);
+                if (match) {
+                    server = match[1].toUpperCase(); // E.g., "SS82"
+                    name = match[2];                 // E.g., "CDub"
+                }
+                
+                if (!groups[server]) groups[server] = [];
+                groups[server].push({ url, title, name, originalIndex });
+            });
+
+            // 3. Render the Folders (Accordions)
+            for (let srv in groups) {
+                let details = document.createElement('details');
+                details.style.marginBottom = "5px";
+                details.open = true; // Folders are expanded by default
+
+                let summary = document.createElement('summary');
+                summary.innerHTML = `📁 <b>${srv}</b>`;
+                summary.style.cursor = "pointer";
+                summary.style.padding = "6px";
+                summary.style.backgroundColor = "#3a3a3a";
+                summary.style.borderRadius = "3px";
+                summary.style.userSelect = "none";
+                details.appendChild(summary);
+
+                let list = document.createElement('div');
+                list.style.padding = "5px 0px 5px 15px"; // Indent the Lordnames
+
+                // Render the Lordnames inside the folder
+                groups[srv].forEach(item => {
+                    let itemDiv = document.createElement('div');
+                    itemDiv.style.display = "flex";
+                    itemDiv.style.justifyContent = "space-between";
+                    itemDiv.style.alignItems = "center";
+                    itemDiv.style.padding = "5px 0";
+                    itemDiv.style.borderBottom = "1px solid #444";
+
+                    // The actual link
+                    let link = document.createElement('a');
+                    link.innerHTML = item.name; // This is JUST the Lordname now!
+                    link.href = "#";
+                    link.style.color = "#00BFFF";
+                    link.style.textDecoration = "none";
+                    link.style.flex = "1";
+                    link.style.whiteSpace = "nowrap";
+                    link.style.overflow = "hidden";
+                    link.style.textOverflow = "ellipsis";
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        enav.newTab(item.url, {title: item.title});
+                        document.getElementById('fav-dropdown').style.display = 'none';
+                    };
+
+                    // The Delete Button
+                    let delBtn = document.createElement('span');
+                    delBtn.innerHTML = "❌";
+                    delBtn.style.cursor = "pointer";
+                    delBtn.style.fontSize = "12px";
+                    delBtn.style.marginLeft = "10px";
+                    delBtn.title = "Delete Bookmark";
+                    delBtn.onclick = () => {
+                        let currentFavs = store.get('favorites') || [];
+                        currentFavs.splice(item.originalIndex, 1); // Delete exact item
+                        store.set('favorites', currentFavs);
+                        renderFavDropdown(); // Refresh UI instantly
+                    };
+
+                    itemDiv.appendChild(link);
+                    itemDiv.appendChild(delBtn);
+                    list.appendChild(itemDiv);
+                });
+
+                details.appendChild(list);
+                container.appendChild(details);
+            }
+        }
+
+        // 4. Auto-Close Logic (If you click anywhere else on the screen, the menu hides)
+        document.addEventListener('click', (e) => {
+            let favMenu = document.getElementById('fav-dropdown');
+            if (favMenu && favMenu.style.display === 'block') {
+                if (!favMenu.contains(e.target) && e.target.innerHTML !== '⭐️') {
+                    favMenu.style.display = 'none';
+                }
+            }
+        });
+        // ---------------------------------------------
 
         // Zoom Controls
         addControlBtn('➕', 'Zoom In', () => {
@@ -222,55 +362,29 @@
             remote.require('./index.js').removeAllFav();
         }
 
-        // Settings Overlay Logic
+        // NEW: Register with Windows OS
+        function makeDefaultBrowser() {
+            const { app } = remote;
+            
+            // Tell Windows this app can handle HTTP links
+            let success = app.setAsDefaultProtocolClient('http');
+            
+            if (success) {
+                alert("✅ Successfully registered Neat Flash Browser!\n\nWindows may now prompt you to confirm this choice the next time you click an HTTP link.");
+            } else {
+                alert("❌ Failed to register. You may need to run Neat Flash Browser as an Administrator.");
+            }
+        }
+
+        // Settings Overlay Logic (Stripped down)
         require('electron').ipcRenderer.on('ping', (event, message, refresh) => {
             var div = document.getElementById('overlay');
             if(div.style.display === 'none' || refresh) {
-                document.getElementById('favoritesDiv').innerHTML = "";
-                document.getElementById('favoritesDiv').appendChild(makeUL(message));
-                div.style.display = "block";
+                div.style.display = "block"; // Just open the menu!
             } else {
                 div.style.display = "none";
             }
         });
-
-        function makeUL(array) {
-            var list = document.createElement('ul');
-            list.style.listStyleType = "none";
-            list.style.padding = "0";
-
-            (array || []).forEach((item, i) => {
-                // Handle both new objects and old plain strings
-                let itemUrl = typeof item === 'string' ? item : item.url;
-                let itemTitle = typeof item === 'string' ? 'Saved Link' : item.title;
-
-                let li = document.createElement('li');
-                li.style.marginBottom = "10px";
-
-                let a = document.createElement('a');
-                // Display the Title and a truncated version of the long login URL
-                a.text = `[${itemTitle}] ${itemUrl.substring(0, 45)}...`; 
-                a.href = itemUrl;
-                a.style.color = "#00BFFF"; // Pretty blue link
-                a.style.textDecoration = "none";
-                a.style.marginRight = "15px";
-                a.onclick = (e) => { 
-                    e.preventDefault(); 
-                    enav.newTab(itemUrl, {title: itemTitle}); 
-                    showHideSettings(); // Close menu when clicked!
-                };
-                
-                let btn = document.createElement("button");
-                btn.innerHTML = "❌ Remove";
-                btn.style.cursor = "pointer";
-                btn.onclick = () => remote.require('./index').removeFav(i);
-                
-                li.appendChild(a);
-                li.appendChild(btn);
-                list.appendChild(li);
-            });
-            return list;
-        }
 
 		// 9. SETTINGS MENU FIX: Wire the close button!
         window.showHideSettings = function() {

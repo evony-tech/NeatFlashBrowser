@@ -65,7 +65,16 @@ app.commandLine.appendSwitch("--enable-npapi");
 
 // SECURITY NOTE: Load PPAPI Flash plugin with error handling
 try {
-	const pluginPath = path.join(__dirname, pluginName);
+	let pluginPath;
+	
+	// If compiled, look in the unpacked folder outside the archive
+	if (__dirname.includes('.asar')) {
+		pluginPath = path.join(process.resourcesPath, 'app.asar.unpacked', pluginName);
+	} else {
+		// If running locally in VS Code, look in the normal folder
+		pluginPath = path.join(__dirname, pluginName);
+	}
+	
 	app.commandLine.appendSwitch('ppapi-flash-path', pluginPath);
 	console.log(`Flash plugin loaded from: ${pluginPath}`);
 } catch (error) {
@@ -173,15 +182,16 @@ app.on('ready',   () => {
     let filePath = 'filePath';
 	console.log("inti param" + process.argv);
 
-	// Locate where you catch the URL and Title
-	const passedUrl = process.argv.find(arg => arg.startsWith('http://') || arg.startsWith('https://'));
+	// --- NEAT FLASH BROWSER: SAFE ARGUMENT PARSER ---
+	// Locate where you catch the URL and Title via explicit flags
+	const urlArg = process.argv.find(arg => arg.startsWith('--url='));
 	const titleArg = process.argv.find(arg => arg.startsWith('--title='));
 
-	// Use a safe fallback for the title
+	// Use a safe fallback
 	let passedTitle = titleArg ? titleArg.replace('--title=', '') : 'NeatFlashBrowser';
-	let safeUrl = passedUrl ? passedUrl.replace("FlashBrowser:", "").replace("FlashyBrowser:", "") : "none";
+	let safeUrl = urlArg ? urlArg.replace('--url=', '') : "none";
 
-	// BULLETPROOFING: Encode the strings so spaces/brackets don't crash the Chromium C++ Engine
+	// BULLETPROOFING: Encode the strings so spaces/brackets don't crash the Chromium Engine
 	let encodedTitle = encodeURIComponent(passedTitle);
 	let encodedUrl = encodeURIComponent(safeUrl);
 
