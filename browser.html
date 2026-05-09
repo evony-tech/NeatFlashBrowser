@@ -2,6 +2,31 @@
 <html>
 <head>
     <link rel="stylesheet" href="themes/chrome-like.css">
+    <style>
+    /* This removes the light background and styles the buttons correctly */
+    .nav-ctrl-btn {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0 10px;
+        height: 100%;
+        font-size: 16px;
+        outline: none;
+        transition: background 0.2s;
+    }
+
+    .nav-ctrl-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1); /* Subtle hover effect */
+    }
+
+    /* Ensure the container is a flexbox so buttons stay on the right */
+    #nav-body-ctrls {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+</style>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden; background-color: #202124; height: 100vh; display: flex; flex-direction: column;">
 
@@ -22,10 +47,14 @@
             <button onclick="dispachClearCache()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #d9534f; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🗑️ Clear Cache & Restart</button>
             <button onclick="clearAllFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #f0ad4e; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">⚠️ Clear All Favorites</button>
             <button onclick="document.getElementById('overlay').style.display='none'" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #5cb85c; border: none; padding: 10px; width: 100%; border-radius: 5px;">✅ Close Menu</button>
-        
+            <div style="text-align: center; color: #888; font-size: 12px; margin-top: 25px; border-top: 1px solid #444; padding-top: 15px; line-height: 1.5;">
+                <b style="color: #bbb; font-size: 14px;">Neat Flash Browser</b><br>
+                <span id="app-version-display">Version: Loading...</span><br>
+                Engineered for The NEAT Botfather by Evony-Tech
+            </div>
         </div>
     </div>
-
+    <div id="fav-backdrop" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 998;" onclick="document.getElementById('fav-dropdown').style.display='none'; this.style.display='none';"></div>
     <div id="fav-dropdown" style="display: none; position: absolute; top: 40px; right: 100px; width: 260px; background-color: #2b2b2b; border: 1px solid #555; border-radius: 5px; box-shadow: 0px 5px 15px rgba(0,0,0,0.8); z-index: 1000; color: white; padding: 15px; max-height: 500px; overflow-y: auto;">
         <div id="fav-dropdown-content"></div>
     </div>
@@ -58,96 +87,14 @@
         const Store = require('./store');
         const store = new Store({ configName: 'user-preferences' });
         
-        let home = null;
-        try { home = store.get('homepage'); } catch (e) {}
-
-        const defaultHome = 'http://neato3.com/neatflashbrowser';
-        
-        const enav = new (require('electron-navigation'))({
-            defaultFavicons: true,
-            // Kills the Google default and forces Neato3 when you click the '+' button
-            newTabParams: [defaultHome, { icon: "clear", title: "Neat Flash Browser" }],
-            newTabCallback: (url, options) => {
-                options.postTabOpenCallback = webview => {
-                    webview.setAttribute('plugins', '');
-                }
-                return {options};
-            }
-        });
-
-        // 1. SETUP UI REFERENCES (Declared once only!)
         const controls = document.getElementById('nav-body-ctrls');
-        const tabsContainer = document.getElementById('nav-body-tabs');
         const neatHeader = document.getElementById('neat-header');
-        const winControls = document.getElementById('window-controls');
         const win = remote.getCurrentWindow();
 
-        // Save original styles for Fullscreen toggling
-        let oldHeaderStyle = getComputedStyle(neatHeader).display;
-        let oldControlsStyle = getComputedStyle(controls).display;
-
-        // --- NEAT FLASH BROWSER: SAFE DYNAMIC ROUTER ---
-        const args = window.process.argv;
-        
-        // Find our safely formatted Chromium flags
-        const urlArg = args.find(a => a.startsWith('--neat-url='));
-        const titleArg = args.find(a => a.startsWith('--neat-title='));
-
-        // Decode the strings back to normal text (removes the %20 spaces)
-        const passedUrl = urlArg ? decodeURIComponent(urlArg.replace('--neat-url=', '')) : 'none';
-        const passedTitle = titleArg ? decodeURIComponent(titleArg.replace('--neat-title=', '')) : 'Neat Flash Browser';
-
-        if (passedUrl !== "none" && passedUrl.startsWith('http')) {
-            enav.newTab(passedUrl, { title: passedTitle });
-			// NEW: Automatically save this Botfather link!
-            remote.require('./index').autoSaveFavorite(passedUrl, passedTitle);
-        } else if (home) {
-            enav.newTab(home, { icon: "icons/restore-w-24.png", title: "Home" });
-        } else {
-            enav.newTab(defaultHome, { icon: "clear", title: "Neat Flash Browser" });
-        }
-
-        // 3. WINDOW CONTROL LOGIC
-        document.getElementById('min-button').addEventListener('click', () => win.minimize());
-        document.getElementById('max-button').addEventListener('click', () => {
-            win.isMaximized() ? win.unmaximize() : win.maximize();
-        });
-        document.getElementById('close-button').addEventListener('click', () => win.close());
-
-        // Hover Effects
-        ['min-button', 'max-button', 'close-button'].forEach(id => {
-            const btn = document.getElementById(id);
-            btn.addEventListener('mouseenter', () => {
-                btn.style.backgroundColor = (id === 'close-button') ? '#e81123' : '#3c3c3c';
-            });
-            btn.addEventListener('mouseleave', () => {
-                btn.style.backgroundColor = 'transparent';
-            });
-        });
-
-        // 4. FULLSCREEN LOGIC
-        let isFullScreen = false;
-        function toggleFullscreen(event) {
-            if (event.key === 'Escape' && isFullScreen) {
-                exitFullScreen();
-            } else if (event.key === 'F11' || event.type === 'click') {
-                isFullScreen = !isFullScreen;
-                ipcRenderer.send('fullScreen-click');
-                neatHeader.style.display = isFullScreen ? "none" : oldHeaderStyle;
-                controls.style.display = isFullScreen ? "none" : oldControlsStyle;
-            }
-        }
-
-        function exitFullScreen() {
-            isFullScreen = false;
-            neatHeader.style.display = oldHeaderStyle;
-            controls.style.display = oldControlsStyle;
-        }
-
-        // 5. CUSTOM BUTTON GENERATOR (Home, Favs, Zoom, Mute)
+        // 1. Define the Button Tool (Transparent by default)
         function addControlBtn(icon, title, clickFn) {
             let btn = document.createElement("button");
-            btn.id = 'fs-button';
+            btn.className = 'nav-ctrl-btn'; // Uses the transparent CSS above
             btn.innerHTML = icon;
             btn.title = title;
             btn.onclick = clickFn;
@@ -155,155 +102,36 @@
             return btn;
         }
 
-        // Home & Favorites
+        // 2. Initialize Navigation (Address bar creates here)
+        const enav = new (require('electron-navigation'))({
+            defaultFavicons: true,
+            newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
+            newTabCallback: (url, options) => {
+                options.postTabOpenCallback = webview => { webview.setAttribute('plugins', ''); }
+                return {options};
+            }
+        });
+
+        // 3. CREATE BUTTONS (Now they will appear AFTER the address bar on the right)
         addControlBtn('🏠', 'Set as Homepage', () => {
             let url = document.getElementById('nav-ctrls-url').value;
             if (url) remote.require('./index').sethome(url);
         });
 
-        // --- SMART FAVORITES DROPDOWN ENGINE ---
         addControlBtn('⭐️', 'Favorites Menu', (e) => {
             let favMenu = document.getElementById('fav-dropdown');
+            let backdrop = document.getElementById('fav-backdrop');
             if (favMenu.style.display === 'block') {
                 favMenu.style.display = 'none';
+                backdrop.style.display = 'none';
             } else {
                 renderFavDropdown();
                 favMenu.style.display = 'block';
+                backdrop.style.display = 'block';
             }
-            e.stopPropagation(); // Stop click from immediately closing the menu
+            e.stopPropagation(); 
         });
 
-        function renderFavDropdown() {
-            let container = document.getElementById('fav-dropdown-content');
-            container.innerHTML = ""; // Wipe it clean
-            
-            // 1. The "Add Current Tab" Button
-            let addBtn = document.createElement('button');
-            addBtn.innerHTML = "➕ Add Current Tab to Favorites";
-            addBtn.style.cssText = "width: 100%; padding: 8px; background: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 15px; font-weight: bold;";
-            addBtn.onclick = () => {
-                let activeTab = document.querySelector('webview.active');
-                if (activeTab) {
-                    let url = activeTab.getURL();
-                    let title = activeTab.getTitle();
-                    
-                    // Save directly to the local store to avoid triggering the backend Settings UI!
-                    let favs = store.get('favorites') || [];
-                    favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f); // Fallback for ancient links
-                    
-                    let existing = favs.findIndex(f => f.url === url);
-                    if (existing === -1) {
-                        favs.push({ url: url, title: title });
-                    } else {
-                        favs[existing].title = title;
-                    }
-                    store.set('favorites', favs);
-                    renderFavDropdown(); // Refresh the dropdown instantly
-                }
-            };
-            container.appendChild(addBtn);
-
-            // 2. Fetch and Group by Server
-            let favs = store.get('favorites') || [];
-            let groups = {};
-            
-            favs.forEach((fav, originalIndex) => {
-                let url = typeof fav === 'string' ? fav : fav.url;
-                let title = (typeof fav === 'string' ? 'Saved Link' : fav.title) || 'Saved Link';
-                
-                let server = "Other";
-                let name = title;
-                
-                // PARSER: Looks for "[SS82] CDub" and splits it into Server and Lordname
-                let match = title.match(/^\[(.*?)\]\s*(.*)$/);
-                if (match) {
-                    server = match[1].toUpperCase(); // E.g., "SS82"
-                    name = match[2];                 // E.g., "CDub"
-                }
-                
-                if (!groups[server]) groups[server] = [];
-                groups[server].push({ url, title, name, originalIndex });
-            });
-
-            // 3. Render the Folders (Accordions)
-            for (let srv in groups) {
-                let details = document.createElement('details');
-                details.style.marginBottom = "5px";
-                details.open = true; // Folders are expanded by default
-
-                let summary = document.createElement('summary');
-                summary.innerHTML = `📁 <b>${srv}</b>`;
-                summary.style.cursor = "pointer";
-                summary.style.padding = "6px";
-                summary.style.backgroundColor = "#3a3a3a";
-                summary.style.borderRadius = "3px";
-                summary.style.userSelect = "none";
-                details.appendChild(summary);
-
-                let list = document.createElement('div');
-                list.style.padding = "5px 0px 5px 15px"; // Indent the Lordnames
-
-                // Render the Lordnames inside the folder
-                groups[srv].forEach(item => {
-                    let itemDiv = document.createElement('div');
-                    itemDiv.style.display = "flex";
-                    itemDiv.style.justifyContent = "space-between";
-                    itemDiv.style.alignItems = "center";
-                    itemDiv.style.padding = "5px 0";
-                    itemDiv.style.borderBottom = "1px solid #444";
-
-                    // The actual link
-                    let link = document.createElement('a');
-                    link.innerHTML = item.name; // This is JUST the Lordname now!
-                    link.href = "#";
-                    link.style.color = "#00BFFF";
-                    link.style.textDecoration = "none";
-                    link.style.flex = "1";
-                    link.style.whiteSpace = "nowrap";
-                    link.style.overflow = "hidden";
-                    link.style.textOverflow = "ellipsis";
-                    link.onclick = (e) => {
-                        e.preventDefault();
-                        enav.newTab(item.url, {title: item.title});
-                        document.getElementById('fav-dropdown').style.display = 'none';
-                    };
-
-                    // The Delete Button
-                    let delBtn = document.createElement('span');
-                    delBtn.innerHTML = "❌";
-                    delBtn.style.cursor = "pointer";
-                    delBtn.style.fontSize = "12px";
-                    delBtn.style.marginLeft = "10px";
-                    delBtn.title = "Delete Bookmark";
-                    delBtn.onclick = () => {
-                        let currentFavs = store.get('favorites') || [];
-                        currentFavs.splice(item.originalIndex, 1); // Delete exact item
-                        store.set('favorites', currentFavs);
-                        renderFavDropdown(); // Refresh UI instantly
-                    };
-
-                    itemDiv.appendChild(link);
-                    itemDiv.appendChild(delBtn);
-                    list.appendChild(itemDiv);
-                });
-
-                details.appendChild(list);
-                container.appendChild(details);
-            }
-        }
-
-        // 4. Auto-Close Logic (If you click anywhere else on the screen, the menu hides)
-        document.addEventListener('click', (e) => {
-            let favMenu = document.getElementById('fav-dropdown');
-            if (favMenu && favMenu.style.display === 'block') {
-                if (!favMenu.contains(e.target) && e.target.innerHTML !== '⭐️') {
-                    favMenu.style.display = 'none';
-                }
-            }
-        });
-        // ---------------------------------------------
-
-        // Zoom Controls
         addControlBtn('➕', 'Zoom In', () => {
             let webview = document.querySelector('webview.active');
             if (webview) webview.setZoomFactor(webview.getZoomFactor() + 0.2);
@@ -314,83 +142,119 @@
             if (webview) webview.setZoomFactor(webview.getZoomFactor() - 0.2);
         });
 
-        // Extras
         addControlBtn('🔳️', 'FullScreen', toggleFullscreen);
-
         addControlBtn('⚙️', 'Settings', () => remote.require('./index').showSettings());
 
-        // 6. FAVORITES / SEARCH SUGGESTIONS
-        let urlBar = document.getElementById('nav-ctrls-url');
-        if(urlBar) {
-            // NEW: Intercept Enter key for explicitly typed HTTPS links
-            urlBar.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    let inputUrl = urlBar.value.trim();
-                    if (inputUrl.startsWith('https://')) {
-                        e.preventDefault(); // Stop the browser engine from triggering
-                        e.stopPropagation(); 
-                        require('electron').shell.openExternal(inputUrl); // Hand to Windows
-                        
-                        // Reset the URL bar back to the current active Evony tab
-                        let activeTab = document.querySelector('webview.active');
-                        if (activeTab) urlBar.value = activeTab.getURL();
-                    }
-                }
-            }, true); // The 'true' forces this to fire BEFORE the navigation engine!
-
-            urlBar.addEventListener('keyup', (e) => {
-                let list = store.get('favorites');
-                if (list && e.keyCode !== 8) {
-                    let input = urlBar.value;
-                    let found = list.find(fav => {
-                        let fUrl = typeof fav === 'string' ? fav : fav.url;
-                        return fUrl.includes(input);
-                    });
-                    if (found) {
-                        let finalUrl = typeof found === 'string' ? found : found.url;
-                        urlBar.value = finalUrl.replace(/(^\w+:|^)\/\//, '').replace("www.", "");
-                        urlBar.setSelectionRange(input.length, 999);
-                    }
-                }
-            });
-        }
-
-        // 7. INTERNAL UTILS (Clear Cache, etc.)
-        function dispachClearCache() { ipcRenderer.send('clearChache-click'); }
-        
-        function clearAllFavorites() {
-            remote.require('./index.js').removeAllFav();
-        }
-
-        // NEW: Register with Windows OS
-        function makeDefaultBrowser() {
-            const { app } = remote;
-            
-            // Tell Windows this app can handle HTTP links
-            let success = app.setAsDefaultProtocolClient('http');
-            
-            if (success) {
-                alert("✅ Successfully registered Neat Flash Browser!\n\nWindows may now prompt you to confirm this choice the next time you click an HTTP link.");
-            } else {
-                alert("❌ Failed to register. You may need to run Neat Flash Browser as an Administrator.");
-            }
-        }
-
-        // Settings Overlay Logic (Stripped down)
-        require('electron').ipcRenderer.on('ping', (event, message, refresh) => {
-            var div = document.getElementById('overlay');
-            if(div.style.display === 'none' || refresh) {
-                div.style.display = "block"; // Just open the menu!
-            } else {
-                div.style.display = "none";
+        // 3. THE HYBRID ROUTER (With the fix for window.process)
+        const enav = new (require('electron-navigation'))({
+            defaultFavicons: true,
+            newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
+            newTabCallback: (url, options) => {
+                options.postTabOpenCallback = webview => { webview.setAttribute('plugins', ''); }
+                return {options};
             }
         });
 
-		// 9. SETTINGS MENU FIX: Wire the close button!
-        window.showHideSettings = function() {
-            document.getElementById('overlay').style.display = "none";
-        };
+        // FIX: Use remote.process.argv to safely get launch arguments
+        const args = remote.process.argv;
+        const urlArg = args.find(a => a.startsWith('--neat-url=') || a.startsWith('--url='));
+        const titleArg = args.find(a => a.startsWith('--neat-title=') || a.startsWith('--title='));
 
+        let passedUrl = urlArg ? decodeURIComponent(urlArg.replace(/--neat-url=|--url=/, '')) : (args.find(a => a.startsWith('http')) || 'none');
+        let passedTitle = titleArg ? decodeURIComponent(titleArg.replace(/--neat-title=|--title=/, '')) : 'Neat Flash Browser';
+
+        if (passedUrl !== "none" && passedUrl.startsWith('http')) {
+            enav.newTab(passedUrl, { title: passedTitle });
+            saveToFavorites(passedUrl, passedTitle);
+        } else {
+            enav.newTab('http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" });
+        }
+
+        // 4. TAB & FAVORITE UTILS
+        ipcRenderer.on('open-new-tab', (event, data) => {
+            const newUrl = data.url ? decodeURIComponent(data.url) : 'none';
+            const newTitle = data.title ? decodeURIComponent(data.title) : 'Neat Flash Browser';
+            if (newUrl !== "none" && newUrl.startsWith('http')) {
+                enav.newTab(newUrl, { title: newTitle });
+                saveToFavorites(newUrl, newTitle);
+            }
+        });
+
+        function saveToFavorites(url, title) {
+            let favs = store.get('favorites') || [];
+            favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
+            let existingIndex = favs.findIndex(f => f.url === url);
+            if (existingIndex === -1) {
+                favs.push({ url: url, title: title });
+                store.set('favorites', favs);
+            }
+        }
+
+        function renderFavDropdown() {
+            let container = document.getElementById('fav-dropdown-content');
+            container.innerHTML = ""; 
+            
+            let addBtn = document.createElement('button');
+            addBtn.innerHTML = "➕ Add Current Tab";
+            addBtn.style.cssText = "width: 100%; padding: 8px; background: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 15px; font-weight: bold;";
+            addBtn.onclick = () => {
+                let activeTab = document.querySelector('webview.active');
+                if (activeTab) saveToFavorites(activeTab.getURL(), activeTab.getTitle());
+                renderFavDropdown();
+            };
+            container.appendChild(addBtn);
+
+            let favs = store.get('favorites') || [];
+            let groups = {};
+            favs.forEach((fav, idx) => {
+                let title = (typeof fav === 'string' ? 'Saved Link' : fav.title) || 'Saved Link';
+                let server = "Other";
+                let name = title;
+                let match = title.match(/^\[(.*?)\]\s*(.*)$/);
+                if (match) { server = match[1].toUpperCase(); name = match[2]; }
+                if (!groups[server]) groups[server] = [];
+                groups[server].push({ url: fav.url, name: name, idx: idx });
+            });
+
+            for (let srv in groups) {
+                let det = document.createElement('details');
+                let sum = document.createElement('summary');
+                sum.innerHTML = `📁 <b>${srv}</b>`;
+                det.appendChild(sum);
+                groups[srv].forEach(item => {
+                    let a = document.createElement('a');
+                    a.innerHTML = item.name;
+                    a.onclick = () => { enav.newTab(item.url); document.getElementById('fav-dropdown').style.display='none'; };
+                    det.appendChild(a);
+                });
+                container.appendChild(det);
+            }
+        }
+
+        // 5. WINDOW CONTROLS
+        document.getElementById('min-button').addEventListener('click', () => win.minimize());
+        document.getElementById('max-button').addEventListener('click', () => {
+            win.isMaximized() ? win.unmaximize() : win.maximize();
+        });
+        document.getElementById('close-button').addEventListener('click', () => win.close());
+
+        // 6. FULLSCREEN SYNC
+        let isFullScreen = false;
+        function toggleFullscreen() {
+            isFullScreen = !isFullScreen;
+            ipcRenderer.send('fullScreen-click');
+            neatHeader.style.display = isFullScreen ? "none" : "flex";
+            controls.style.display = isFullScreen ? "none" : "block";
+        }
+
+        // 7. VERSION & SETTINGS
+        document.getElementById('app-version-display').innerText = "Version " + remote.app.getVersion();
+        window.dispachClearCache = () => ipcRenderer.send('clearChache-click');
+        window.clearAllFavorites = () => remote.require('./index.js').removeAllFav();
+        window.makeDefaultBrowser = () => {
+            remote.app.setAsDefaultProtocolClient('http');
+            remote.shell.openExternal('ms-settings:defaultapps?registeredApp=NeatFlashBrowser');
+        };
     </script>
     </body>
 </html>

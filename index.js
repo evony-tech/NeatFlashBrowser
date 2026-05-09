@@ -112,8 +112,38 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
 	console.error('UNHANDLED REJECTION:', reason);
 });
+// --- NEAT FLASH BROWSER: SINGLE INSTANCE LOCK ---
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+    app.quit(); // If an instance is already running, kill this new one immediately
+    return;
+}
+
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+
+        // HYBRID PARSER: Look for the flag OR a raw http string
+        const urlArg = commandLine.find(arg => arg.startsWith('--url=') || arg.startsWith('--neat-url='));
+        const titleArg = commandLine.find(arg => arg.startsWith('--title=') || arg.startsWith('--neat-title='));
+
+        // If no flag found, look for a raw argument starting with http
+        let safeUrl = urlArg ? urlArg.replace(/--url=|--neat-url=/, '') : (commandLine.find(arg => arg.startsWith('http')) || "none");
+        let passedTitle = titleArg ? titleArg.replace(/--title=|--neat-title=/, '') : 'Neat Flash Browser';
+
+        let encodedTitle = encodeURIComponent(passedTitle);
+        let encodedUrl = encodeURIComponent(safeUrl);
+
+        mainWindow.webContents.send('open-new-tab', { url: encodedUrl, title: encodedTitle });
+    }
+});
 
 app.on('ready',   () => {
+
+	// FIX: Explicitly set the App ID so Windows can match it to the Registry keys
+    app.setAppUserModelId("com.neato3.neatflashbrowser");
 
 	// --- NEAT FLASH BROWSER: SYSTEM DEFAULT HANDLER ---
 	// Ask Windows to make this the default browser for web links
@@ -214,8 +244,8 @@ app.on('ready',   () => {
             plugins: true,
             contextIsolation: false,
             enableRemoteModule: true,
-			// Pass them as strictly formatted Chromium flags
-			additionalArguments: [`--neat-url=${encodedUrl}`, `--neat-title=${encodedTitle}`]
+			// Use --url and --title for maximum compatibility with the renderer router
+            additionalArguments: [`--url=${encodedUrl}`, `--title=${encodedTitle}`]
         }
     });
 
