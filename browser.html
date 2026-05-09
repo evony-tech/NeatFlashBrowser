@@ -94,7 +94,7 @@
         // 1. Define the Button Tool (Transparent by default)
         function addControlBtn(icon, title, clickFn) {
             let btn = document.createElement("button");
-            btn.className = 'nav-ctrl-btn'; // Uses the transparent CSS above
+            btn.className = 'nav-ctrl-btn'; 
             btn.innerHTML = icon;
             btn.title = title;
             btn.onclick = clickFn;
@@ -112,7 +112,7 @@
             }
         });
 
-        // 3. CREATE BUTTONS (Now they will appear AFTER the address bar on the right)
+        // 3. CREATE BUTTONS (They appear AFTER the address bar on the right)
         addControlBtn('🏠', 'Set as Homepage', () => {
             let url = document.getElementById('nav-ctrls-url').value;
             if (url) remote.require('./index').sethome(url);
@@ -145,17 +145,7 @@
         addControlBtn('🔳️', 'FullScreen', toggleFullscreen);
         addControlBtn('⚙️', 'Settings', () => remote.require('./index').showSettings());
 
-        // 3. THE HYBRID ROUTER (With the fix for window.process)
-        const enav = new (require('electron-navigation'))({
-            defaultFavicons: true,
-            newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
-            newTabCallback: (url, options) => {
-                options.postTabOpenCallback = webview => { webview.setAttribute('plugins', ''); }
-                return {options};
-            }
-        });
-
-        // FIX: Use remote.process.argv to safely get launch arguments
+        // 4. THE HYBRID ROUTER
         const args = remote.process.argv;
         const urlArg = args.find(a => a.startsWith('--neat-url=') || a.startsWith('--url='));
         const titleArg = args.find(a => a.startsWith('--neat-title=') || a.startsWith('--title='));
@@ -165,18 +155,27 @@
 
         if (passedUrl !== "none" && passedUrl.startsWith('http')) {
             enav.newTab(passedUrl, { title: passedTitle });
-            saveToFavorites(passedUrl, passedTitle);
+            
+            // FIX: Only auto-save on initial boot if the strict Botfather flag was present
+            if (urlArg) {
+                saveToFavorites(passedUrl, passedTitle);
+            }
         } else {
             enav.newTab('http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" });
         }
 
-        // 4. TAB & FAVORITE UTILS
+        // 5. TAB & FAVORITE UTILS
         ipcRenderer.on('open-new-tab', (event, data) => {
             const newUrl = data.url ? decodeURIComponent(data.url) : 'none';
             const newTitle = data.title ? decodeURIComponent(data.title) : 'Neat Flash Browser';
+            
             if (newUrl !== "none" && newUrl.startsWith('http')) {
                 enav.newTab(newUrl, { title: newTitle });
-                saveToFavorites(newUrl, newTitle);
+                
+                // FIX: Only auto-save on second clicks if the backend confirmed it was Botfather
+                if (data.isBotfather) {
+                    saveToFavorites(newUrl, newTitle);
+                }
             }
         });
 
@@ -220,25 +219,70 @@
                 let det = document.createElement('details');
                 let sum = document.createElement('summary');
                 sum.innerHTML = `📁 <b>${srv}</b>`;
+                sum.style.cursor = "pointer";
+                sum.style.padding = "6px";
+                sum.style.backgroundColor = "#3a3a3a";
+                sum.style.borderRadius = "3px";
+                sum.style.userSelect = "none";
                 det.appendChild(sum);
+                
+                let list = document.createElement('div');
+                list.style.padding = "5px 0px 5px 15px";
+
                 groups[srv].forEach(item => {
+                    let itemDiv = document.createElement('div');
+                    itemDiv.style.display = "flex";
+                    itemDiv.style.justifyContent = "space-between";
+                    itemDiv.style.alignItems = "center";
+                    itemDiv.style.padding = "5px 0";
+                    itemDiv.style.borderBottom = "1px solid #444";
+
                     let a = document.createElement('a');
                     a.innerHTML = item.name;
-                    a.onclick = () => { enav.newTab(item.url); document.getElementById('fav-dropdown').style.display='none'; };
-                    det.appendChild(a);
+                    a.href = "#";
+                    a.style.color = "#00BFFF";
+                    a.style.textDecoration = "none";
+                    a.style.flex = "1";
+                    a.style.whiteSpace = "nowrap";
+                    a.style.overflow = "hidden";
+                    a.style.textOverflow = "ellipsis";
+                    a.onclick = (e) => { 
+                        e.preventDefault();
+                        enav.newTab(item.url); 
+                        document.getElementById('fav-dropdown').style.display='none'; 
+                        document.getElementById('fav-backdrop').style.display='none';
+                    };
+
+                    let delBtn = document.createElement('span');
+                    delBtn.innerHTML = "❌";
+                    delBtn.style.cursor = "pointer";
+                    delBtn.style.fontSize = "12px";
+                    delBtn.style.marginLeft = "10px";
+                    delBtn.title = "Delete Bookmark";
+                    delBtn.onclick = () => {
+                        let currentFavs = store.get('favorites') || [];
+                        currentFavs.splice(item.idx, 1); 
+                        store.set('favorites', currentFavs);
+                        renderFavDropdown(); 
+                    };
+
+                    itemDiv.appendChild(a);
+                    itemDiv.appendChild(delBtn);
+                    list.appendChild(itemDiv);
                 });
+                det.appendChild(list);
                 container.appendChild(det);
             }
         }
 
-        // 5. WINDOW CONTROLS
+        // 6. WINDOW CONTROLS
         document.getElementById('min-button').addEventListener('click', () => win.minimize());
         document.getElementById('max-button').addEventListener('click', () => {
             win.isMaximized() ? win.unmaximize() : win.maximize();
         });
         document.getElementById('close-button').addEventListener('click', () => win.close());
 
-        // 6. FULLSCREEN SYNC
+        // 7. FULLSCREEN SYNC
         let isFullScreen = false;
         function toggleFullscreen() {
             isFullScreen = !isFullScreen;
@@ -247,7 +291,7 @@
             controls.style.display = isFullScreen ? "none" : "block";
         }
 
-        // 7. VERSION & SETTINGS
+        // 8. VERSION & SETTINGS
         document.getElementById('app-version-display').innerText = "Version " + remote.app.getVersion();
         window.dispachClearCache = () => ipcRenderer.send('clearChache-click');
         window.clearAllFavorites = () => remote.require('./index.js').removeAllFav();

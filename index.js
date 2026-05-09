@@ -125,18 +125,21 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.focus();
 
-        // HYBRID PARSER: Look for the flag OR a raw http string
         const urlArg = commandLine.find(arg => arg.startsWith('--url=') || arg.startsWith('--neat-url='));
         const titleArg = commandLine.find(arg => arg.startsWith('--title=') || arg.startsWith('--neat-title='));
 
-        // If no flag found, look for a raw argument starting with http
         let safeUrl = urlArg ? urlArg.replace(/--url=|--neat-url=/, '') : (commandLine.find(arg => arg.startsWith('http')) || "none");
         let passedTitle = titleArg ? titleArg.replace(/--title=|--neat-title=/, '') : 'Neat Flash Browser';
 
         let encodedTitle = encodeURIComponent(passedTitle);
         let encodedUrl = encodeURIComponent(safeUrl);
 
-        mainWindow.webContents.send('open-new-tab', { url: encodedUrl, title: encodedTitle });
+        // FIX: Pass 'isBotfather' as true ONLY if the strict flag was found
+        mainWindow.webContents.send('open-new-tab', { 
+            url: encodedUrl, 
+            title: encodedTitle, 
+            isBotfather: !!urlArg 
+        });
     }
 });
 
