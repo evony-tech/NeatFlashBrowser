@@ -94,8 +94,6 @@
         const passedUrl = urlArg ? decodeURIComponent(urlArg.replace('--neat-url=', '')) : 'none';
         const passedTitle = titleArg ? decodeURIComponent(titleArg.replace('--neat-title=', '')) : 'Neat Flash Browser';
 
-        const defaultHome = 'http://neato3.com/neatflashbrowser';
-
         if (passedUrl !== "none" && passedUrl.startsWith('http')) {
             enav.newTab(passedUrl, { title: passedTitle });
 			// NEW: Automatically save this Botfather link!
@@ -177,23 +175,29 @@
         });
 
         // Extras
-        addControlBtn('💾', 'Save SWF', () => ipcRenderer.send('download-button'));
         addControlBtn('🔳️', 'FullScreen', toggleFullscreen);
-
-        let muteBtn = addControlBtn('🔊', 'Mute/Unmute', () => {
-            let webview = document.querySelector('webview.active');
-            if (webview) {
-                let isMuted = webview.isAudioMuted();
-                webview.setAudioMuted(!isMuted);
-                muteBtn.innerHTML = isMuted ? '🔊' : '🔈';
-            }
-        });
 
         addControlBtn('⚙️', 'Settings', () => remote.require('./index').showSettings());
 
         // 6. FAVORITES / SEARCH SUGGESTIONS
         let urlBar = document.getElementById('nav-ctrls-url');
         if(urlBar) {
+            // NEW: Intercept Enter key for explicitly typed HTTPS links
+            urlBar.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    let inputUrl = urlBar.value.trim();
+                    if (inputUrl.startsWith('https://')) {
+                        e.preventDefault(); // Stop the browser engine from triggering
+                        e.stopPropagation(); 
+                        require('electron').shell.openExternal(inputUrl); // Hand to Windows
+                        
+                        // Reset the URL bar back to the current active Evony tab
+                        let activeTab = document.querySelector('webview.active');
+                        if (activeTab) urlBar.value = activeTab.getURL();
+                    }
+                }
+            }, true); // The 'true' forces this to fire BEFORE the navigation engine!
+
             urlBar.addEventListener('keyup', (e) => {
                 let list = store.get('favorites');
                 if (list && e.keyCode !== 8) {

@@ -13,8 +13,6 @@ const path = require('path');
 const Store = require('./store.js');
 const contextMenu = require('electron-context-menu');
 const { ipcMain } = require('electron');
-let swfURL = 'no swf'
-const {download} = require('electron-dl');
 contextMenu({
 	showSaveImageAs: true
 });
@@ -126,11 +124,45 @@ app.on('ready',   () => {
 			}
 		});
 
+		// NEW: Catch sneaky server-side redirects (http -> https)
+		contents.on('will-redirect', (navEvent, navigationUrl) => {
+			if (navigationUrl.startsWith('https://')) {
+				navEvent.preventDefault(); 
+				require('electron').shell.openExternal(navigationUrl); 
+			}
+		});
+
 		// Catch "Open in New Tab" or "_blank" links
 		contents.on('new-window', (navEvent, navigationUrl) => {
 			if (navigationUrl.startsWith('https://')) {
 				navEvent.preventDefault(); 
 				require('electron').shell.openExternal(navigationUrl); 
+			}
+		});
+	});
+	// --- NEAT FLASH BROWSER: FULLSCREEN SYNC & HOTKEYS ---
+	ipcMain.on('fullScreen-click', () => {
+		if (mainWindow) {
+			let isFS = !mainWindow.isFullScreen();
+			mainWindow.setFullScreen(isFS);
+			mainWindow.webContents.send('toggle-ui-fullscreen', isFS);
+		}
+	});
+
+	// Catch F11 and Escape cleanly across all tabs (even when clicked inside the game)
+	app.on('web-contents-created', (event, contents) => {
+		contents.on('before-input-event', (e, input) => {
+			if (mainWindow) {
+				if (input.key === 'F11' && input.type === 'keyDown') {
+					let isFS = !mainWindow.isFullScreen();
+					mainWindow.setFullScreen(isFS);
+					mainWindow.webContents.send('toggle-ui-fullscreen', isFS);
+					e.preventDefault(); // Stop native Chromium F11
+				} else if (input.key === 'Escape' && input.type === 'keyDown' && mainWindow.isFullScreen()) {
+					mainWindow.setFullScreen(false);
+					mainWindow.webContents.send('toggle-ui-fullscreen', false);
+					e.preventDefault(); 
+				}
 			}
 		});
 	});
@@ -179,33 +211,6 @@ app.on('ready',   () => {
 
     mainWindow.loadURL(`file://${__dirname}/browser.html`);
 
-	// Uncomment to open DevTools for debugging:
-	// mainWindow.webContents.openDevTools();
-
-	
-	// Modify the user agent for all requests to the following urls.
-	const filter = {
-	  urls: ['https://*.darkorbit.com/*', 'https://*.whatsapp.com/*', '*://*/*.swf']
-	}
-
-	mainWindow.webContents.session.webRequest.onBeforeSendHeaders(filter,(details, callback) => {
-
-		if(details.url && details.url.indexOf(".swf") === -1){
-		    console.log("BIGPOINT OR WHATSUP")
-			details.requestHeaders['X-APP'] = app.getVersion();
-			details.requestHeaders['User-Agent'] = 'BigpointClient/1.4.6';
-			if(details.url.indexOf("whatsapp") > 0) {
-				details.requestHeaders['User-Agent'] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15";
-			}
-		}
-		else{
-		//	app.commandLine.appendSwitch('ppapi-flash-path', null);
-         console.log("swf url", details.url)
-		 swfURL = details.url
-		}
-
-        callback({ requestHeaders: details.requestHeaders })
-    });
 
 	// SECURITY: Add Content Security Policy headers for additional protection
 	// Note: CSP is only applied to remote HTTP/HTTPS content, not local file:// resources
@@ -232,8 +237,6 @@ app.on('ready',   () => {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-	
-
 	 
 	mainWindow.once('ready-to-show', () => {
 		if(isMax) {	
@@ -250,10 +253,8 @@ app.on('ready',   () => {
      mainWindow.show()
 	})
 
-
 	// Upper Limit is working of 500 %
 	mainWindow.webContents.setVisualZoomLevelLimits(1, 5).then(console.log("Zoom Levels Have been Set between 100% and 500%")).catch((err) => console.log(err));
-   
    
     mainWindow.on('resize', () => {
 		var isMax = mainWindow.isMaximized() || mainWindow.isFullScreen()
@@ -270,16 +271,6 @@ app.on('ready',   () => {
         
     });
 
-
-	
-	ipcMain.on('download-button', async (event) => {
-		const winX = BrowserWindow.getFocusedWindow();
-		console.log( swfURL, 9921);
-
-		await download(winX,swfURL);
-   });
-
-
 	app.on('browser-window-focus', () => {
 			globalShortcut.register('CTRL+SHIFT+q', () => {
 				console.log(22321 + enav)
@@ -293,14 +284,7 @@ app.on('ready',   () => {
 			globalShortcut.register('CommandOrControl+F', () => {
 			mainWindow.webContents.send('on-find');
 			});
-			
-
-		   function toggleWindowFullScreen(){
-				mainWindow.setFullScreen(!mainWindow.isFullScreen())
-			}
-			ipcMain.on('fullScreen-click', toggleWindowFullScreen);
-			
-			
+						
 			
 			ipcMain.on('clearChache-click', clearCacheFunction);
 			async function clearCacheFunction(){
