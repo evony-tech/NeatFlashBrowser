@@ -107,7 +107,9 @@
             defaultFavicons: true,
             newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
             newTabCallback: (url, options) => {
-                options.postTabOpenCallback = webview => { webview.setAttribute('plugins', ''); }
+                // FIX: Inject 'plugins' AT creation, not after. 
+                // This prevents the Chromium renderer from crash-restarting and flashing a terminal!
+                options.webviewAttributes = { plugins: '' };
                 return {options};
             }
         });
@@ -143,7 +145,7 @@
         });
 
         addControlBtn('🔳️', 'FullScreen', toggleFullscreen);
-        addControlBtn('⚙️', 'Settings', () => remote.require('./index').showSettings());
+        addControlBtn('⚙️', 'Settings', () => document.getElementById('overlay').style.display = 'block');
 
         // 4. THE HYBRID ROUTER
         const args = remote.process.argv;

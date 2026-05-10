@@ -1,3 +1,4 @@
+process.env.ELECTRON_NO_ATTACH_CONSOLE = 'true'; // Force Windows to suppress terminal popups for child processes
 const {
     app,
     protocol,
@@ -59,7 +60,7 @@ if (process.platform !== "darwin") {
 	app.commandLine.appendSwitch('high-dpi-support', "1");
 	//app.commandLine.appendSwitch('force-device-scale-factor', "1");
 }
-app.commandLine.appendSwitch("--enable-npapi");
+//app.commandLine.appendSwitch("--enable-npapi");
 //app.commandLine.appendSwitch("--enable-logging");
 //app.commandLine.appendSwitch("--log-level", 4);
 
@@ -89,7 +90,7 @@ try {
 // - allow-insecure-localhost: Allows local Flash development
 // RECOMMENDATION: Only use this application in an isolated VM or sandbox environment
 app.commandLine.appendSwitch('disable-site-isolation-trials');
-app.commandLine.appendSwitch('no-sandbox');
+//app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
 app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
 

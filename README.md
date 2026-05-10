@@ -1,151 +1,66 @@
+👑 Neat Flash Browser
+The Ultimate Flash Browser engineered exclusively for The NEAT Botfather.
 
-# Flash Browser  (please give us a :star:)
+Neat Flash Browser is a custom-built, ultra-lightweight web browser designed to do one thing perfectly: play Games exactly like it's 2015. By stripping out modern commercial bloat and integrating directly with Botfather, it delivers maximum speed, automated account management, and a hardened security shield for legacy Flash content.
 
-## ⚠️ SECURITY WARNING ⚠️
+🚀 Core Features
+🤖 Seamless Botfather Integration: Click "Login via Web Browser" in Botfather, and Neat Flash instantly catches the handoff. Built-in Single Instance Locking ensures multiple accounts open flawlessly as new tabs in a single, organized window.
 
-**This application uses Electron 9.4.4 and Adobe Flash Player, both of which reached end-of-life and are no longer receiving security updates.**
-- X
-- **Electron 9.4.4**: EOL March 2021 - No security patches available
-- **Adobe Flash Player**: EOL January 12, 2021 - No longer supported by Adobe
-- **Known Vulnerabilities**: 29+ security issues in dependencies
+🛡️ The "HTTPS Bouncer": Flash Player is a legacy engine. To keep you safe, Neat Flash features a rigid security bouncer. It intercepts any external HTTPS links or sneaky redirects, freezes them, and instantly kicks them out to your secure, default Windows browser (Chrome, Edge, etc.). Your Game container stays 100% sealed.
 
-### ✅ Safe Usage Requirements
+📁 Smart Account Organization: Running 50 accounts? The browser automatically parses Botfather's URL tags (e.g., [SS123] TECH) and organizes your lords into sleek, collapsible dark-mode server folders.
 
-**ONLY use Flash Browser in these scenarios:**
-- Running inside a dedicated Virtual Machine (VM)
-- Isolated network segment with no access to sensitive data
-- No important accounts or personal information
-- Legacy Flash game preservation and archival
+🌐 Native OS Integration: With one click in the Settings menu, Neat Flash securely registers itself with Windows 10/11 as your default HTTP handler, while leaving your HTTPS web traffic completely untouched.
 
-**❌ DO NOT:**
-- Use for banking, email, or sensitive accounts
-- Access production systems or important data
-- Run on your main computer without VM isolation
-- Enter passwords or personal information
+⚠️ Security Notice & Architecture
+The Candid Truth: This application relies on Electron 9.4.4 and Adobe Flash Player (PPAPI), both of which are End-of-Life (EOL) and no longer receive security patches.
 
-**See [SECURITY.md](SECURITY.md) for complete security information and best practices.**
+How we mitigate this:
+We engineered the HTTPS Bouncer specifically for this reason. Neat Flash Browser is designed to be an isolated container strictly for http://*.somegamewithcastles.com.
 
----
+DO NOT use this browser for banking, email, or social media.
 
-## Setup Instructions
+DO NOT enter personal passwords into this browser.
 
-### Prerequisites
-- Node.js (version 12.14.0 to 15.x recommended for Electron 9 compatibility)
-- Flash Player plugin files (not included in source code - obtain from previous builds)
+If you navigate outside of the game, the browser will aggressively attempt to route that traffic to your standard, updated OS browser.
 
-### Installation Steps
+For maximum security, we still highly recommend running Botfather and Neat Flash Browser inside a dedicated Virtual Machine (VM) or isolated VPS.
 
-1. **Download & unzip** the code
-2. **Install Node.js** if not already installed
-3. **Navigate** to the unzipped folder using command line/terminal
-4. **Install dependencies:**
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-   Note: `--legacy-peer-deps` is required due to @cliqz/adblocker-electron peer dependency mismatch
+🛠️ Developer Setup & Compilation
+Want to build Neat Flash Browser from the source?
 
-5. **Run the application:**
-   ```bash
-   npm run start
-   ```
+Prerequisites
+Node.js (v12.14.0 to v15.x highly recommended for Electron 9 compatibility)
 
-### Flash Player Plugin Files
+Flash Player Plugin: Due to licensing, the native Flash .dll is not included in the source code. You must place pepflashplayer64.dll (or pepflashplayer32.dll for 32-bit systems) into a folder named flashver/ in the root directory before compiling.
 
-Flash Player plugin files are **not included** in the source code due to licensing. You can obtain them from:
-- Previous Flash Browser releases
-- Archived Flash Player distributions
-- Your own Flash Player installation backups
+Build Instructions
+Clone the repository and open your terminal.
 
-Required files by platform:
-- **Windows (x64)**: `flashver/pepflashplayer64.dll`
-- **Windows (x86)**: `flashver/pepflashplayer32.dll`
-- **Linux**: `flashver/libpepflashplayer.so`
-- **macOS**: `flashver/PepperFlashPlayer.plugin`
+Install the legacy dependencies:
 
----
+Bash
+npm install --legacy-peer-deps
+Run the development build to test:
 
-## Downloads
+Bash
+npm run start
+Compile the Windows Installer (automatically handles ASAR unpacking for the Flash plugin and writes the Master Browser Registry keys):
 
-A browser dedicating to supporting adobe flash.
-Run flash player in browser on:
+Bash
+npm run build
+Your compiled NeatFlashBrowser-Setup.exe will be waiting in the dist/ folder.
 
-Windows 10
-:link: [Download Installer](https://github.com/radubirsan/FlashBrowser/releases) (86 MB) 
+📥 Downloads & Installation
+Ready to play? You don't need to compile it yourself.
+Download the latest pre-packaged installer directly from our website:
 
-MacOS
-:link: [Download Installer](https://github.com/radubirsan/FlashBrowser/releases/tag/v0.2) (268 MB) 
+👉 Download Neat Flash Browser https://neato3.com/neatflashbrowser/
 
-Linux (tested on Ubuntu)
-:link: [Download Installer](https://github.com/radubirsan/FlashBrowser/releases/tag/v0.01) ([Run flash on Ubuntu tutorial](https://flash.pm/2021/09/23/run-flash-player-on-linux-ubuntu-with-flashbrowser-in-14-steps/)) 
+System Requirements:
 
-# How do I use it?
-How to Enable Adobe Flash Player on Chrome Browser?
-How to install flash player browser video:
+Windows 10 or Windows 11 (64-bit)
 
-:movie_camera: Windows:
-https://www.youtube.com/watch?v=Cv3umbqlw1g&t=1s
+The NEAT Botfather (v1.9.5.5 or later for automated URL injection)
 
-:movie_camera: Mac:
-https://www.youtube.com/watch?v=NZFzMEZ9l-Y
-
-<br/>![Capture](https://wethegeek.com/wp-content/uploads/2021/07/Adobe-Flash-Player.png)
-<br/>![Captures](https://images-na.ssl-images-amazon.com/images/I/A1p%2BBYQK5BL.png)
-<br/>![Captures](https://github.com/radubirsan/FlashBrowser/blob/main/unnamed.png)
-
-You can run it from the command line (ex: FlashBrowser.exe D:\\Achilles.swf ) :
-
-
-# Socials:
-- Twitter: https://twitter.com/BrowserFlash
-- Telegram: https://t.me/Flash_EN
-- Discord: https://discord.gg/8nR2J7EcrV
-- Youtube https://www.youtube.com/@FlashisBack
-- e-mail flashblockchain@gmail.com
-
-# Flash Sites:
-
-| Description  | Link |
-| ------------- | ------------- |
-| Turn based Ninja  | http://ninjasage.id  |
-| Game Gallery  | http://coolbuddy.com/  |
-| Game Gallery| https://flashstorage.games/ |
-| Game Gallery| https://www.friv.cloud/swf/list_swf_file.txt|
-| Game Gallery| https://gamaverse.com/|
-| Game Gallery| http://fancyplanet.org/|
-| Game Gallery| https://itch.io/games/flash |
-| Game Gallery| http://mystreous.0fees.net/oyunlar/ |
-| Game Gallery| http://www.kanogames.com/play/game/robokill |
-| Game Gallery| http://www.stickpage.com |
-| Game Gallery| https://dovga.com/games |
-| Game Gallery| https://www.siftheadsgames.com/Sift-Heads-Renegade-2.html |
-<!---| Game Gallery| http://web.archive.org/web/20140818215300/http://www.nitrome.com/games/bumpbattleroyale/#.U_J11DO286Q |-->
-
-
-
----
-
-## Important Security Notice
-
-⚠️ **This is Alpha Software with End-of-Life Dependencies**
-
-**CRITICAL SECURITY REQUIREMENTS:**
-- ✅ **Install and run ONLY in a Virtual Machine (VM)**
-- ✅ **Use isolated network with no access to important data**
-- ✅ **Do NOT log into any important accounts** (email, banking, social media, etc.)
-- ✅ **Do NOT enter passwords or sensitive information**
-- ✅ **Do NOT access production systems or valuable data**
-
-**Known Security Issues:**
-- Electron 9.4.4 reached end-of-life in March 2021 (no security patches)
-- Adobe Flash Player reached end-of-life in January 2021 (no updates)
-- 29+ known vulnerabilities in dependencies (1 low, 9 moderate, 15 high, 4 critical)
-- electron-navigation package has 44 known security issues and is abandoned
-
-**For complete security information, risk assessment, and best practices, see [SECURITY.md](SECURITY.md)**
-
-**For all changes and updates, see [CHANGELOG.md](CHANGELOG.md)**
-
----
-
-[Download Count](https://hanadigital.github.io/grev/?user=radubirsan&repo=FlashBrowser2)
-
+Engineered by Evony-Tech for the Neato3 Community.
