@@ -156,33 +156,30 @@ app.on('ready',   () => {
 	}
 
 	// --- NEAT FLASH BROWSER: HTTPS KICK-OUT BOUNCER ---
-	// Listen to every single tab and window created in the app
 	app.on('web-contents-created', (event, contents) => {
 		
-		// Catch standard clicks that try to change the current page
 		contents.on('will-navigate', (navEvent, navigationUrl) => {
 			if (navigationUrl.startsWith('https://')) {
-				navEvent.preventDefault(); // Block NeatFlashBrowser from opening it
-				require('electron').shell.openExternal(navigationUrl); // Hand it to Windows
+				navEvent.preventDefault(); 
+				exports.openSecureUrl(navigationUrl); // FIX: Use the Smart Escape Pod
 			}
 		});
 
-		// NEW: Catch sneaky server-side redirects (http -> https)
 		contents.on('will-redirect', (navEvent, navigationUrl) => {
 			if (navigationUrl.startsWith('https://')) {
 				navEvent.preventDefault(); 
-				require('electron').shell.openExternal(navigationUrl); 
+				exports.openSecureUrl(navigationUrl); // FIX: Use the Smart Escape Pod
 			}
 		});
 
-		// Catch "Open in New Tab" or "_blank" links
 		contents.on('new-window', (navEvent, navigationUrl) => {
 			if (navigationUrl.startsWith('https://')) {
 				navEvent.preventDefault(); 
-				require('electron').shell.openExternal(navigationUrl); 
+				exports.openSecureUrl(navigationUrl); // FIX: Use the Smart Escape Pod
 			}
 		});
 	});
+	
 	// --- NEAT FLASH BROWSER: FULLSCREEN SYNC & HOTKEYS ---
 	ipcMain.on('fullScreen-click', () => {
 		if (mainWindow) {
@@ -487,5 +484,38 @@ autoUpdater.on('update-downloaded', () => {
     autoUpdater.quitAndInstall();
 }); */
 
+// ==========================================
+// --- NEAT FLASH BROWSER: SMART ESCAPE POD ---
+// ==========================================
+exports.openSecureUrl = (url) => {
+    const fs = require('fs');
+    const { spawn } = require('child_process');
 
+    // The precise fallback sequence: Chrome -> Firefox -> Brave -> Edge
+    const browserPaths = [
+        `${process.env.PROGRAMFILES}\\Google\\Chrome\\Application\\chrome.exe`,
+        `${process.env['PROGRAMFILES(X86)']}\\Google\\Chrome\\Application\\chrome.exe`,
+        `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
+        `${process.env.PROGRAMFILES}\\Mozilla Firefox\\firefox.exe`,
+        `${process.env.PROGRAMFILES}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+        `${process.env['PROGRAMFILES(X86)']}\\Microsoft\\Edge\\Application\\msedge.exe`
+    ];
+
+    let launched = false;
+    for (let browserExe of browserPaths) {
+        if (fs.existsSync(browserExe)) {
+            // Spawn the browser completely detached from Neat Flash Browser
+            spawn(browserExe, [url], { detached: true, stdio: 'ignore' }).unref();
+            launched = true;
+            console.log(`[Bouncer] Escaped to: ${browserExe}`);
+            break;
+        }
+    }
+
+    // Ultimate Fail-safe: If they literally have none of those installed
+    if (!launched) {
+        console.log("[Bouncer] No standard browsers found. Falling back to OS Shell.");
+        require('electron').shell.openExternal(url);
+    }
+};
 

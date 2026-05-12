@@ -107,12 +107,21 @@
             defaultFavicons: true,
             newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
             newTabCallback: (url, options) => {
-                // FIX: Inject 'plugins' AT creation, not after. 
-                // This prevents the Chromium renderer from crash-restarting and flashing a terminal!
                 options.webviewAttributes = { plugins: '' };
                 return {options};
             }
         });
+
+        // --- THE RENDERER BOUNCER: MONKEY PATCH ---
+        const originalNewTab = enav.newTab;
+        enav.newTab = function(url, options) {
+            if (url && url.startsWith('https://')) {
+                // FIX: Use the Smart Escape Pod instead of trusting Windows Shell
+                remote.require('./index').openSecureUrl(url); 
+                return; 
+            }
+            return originalNewTab.call(this, url, options);
+        };
 
         // 3. CREATE BUTTONS (They appear AFTER the address bar on the right)
         addControlBtn('🏠', 'Set as Homepage', () => {
@@ -155,7 +164,7 @@
         let passedUrl = urlArg ? decodeURIComponent(urlArg.replace(/--neat-url=|--url=/, '')) : (args.find(a => a.startsWith('http')) || 'none');
         let passedTitle = titleArg ? decodeURIComponent(titleArg.replace(/--neat-title=|--title=/, '')) : 'Neat Flash Browser';
 
-        if (passedUrl !== "none" && passedUrl.startsWith('http')) {
+        if (passedUrl !== "none" && passedUrl.startsWith('http://')) {
             enav.newTab(passedUrl, { title: passedTitle });
             
             // FIX: Only auto-save on initial boot if the strict Botfather flag was present
