@@ -12,7 +12,7 @@ Because we are forced to use an older version of Electron to maintain PPAPI Flas
 
 ### 1. The Smart Escape Pod (HTTPS Bouncer)
 Neat Flash Browser features a custom-built URL router that aggressively monitors navigation. 
-* **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for Evony and `localhost` Botfather UI).
+* **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for game flash client and `localhost` Botfather UI).
 * **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or external documentation), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
 
 ### 2. Chromium Sandbox Restored
@@ -60,15 +60,15 @@ The primary remaining vulnerability vector is **electron-navigation** (v6.6.6).
 - Navigating to untrusted websites
 
 ### ✅ ACCEPTABLE USE CASES:
-- Logging into the Evony web client alongside The NEAT Botfather
+- Logging into the flash game web client alongside The NEAT Botfather
 - Accessing `http://localhost:8025` dashboards
 - Flash content preservation in isolated/sandboxed environments (VMs)
 
 ## Recommended Security Practices
 
 1. **Virtual Machine Isolation:** For the highest level of security, run Botfather and Neat Flash Browser inside a dedicated Virtual Machine (VM) without shared host folders.
-2. **Network Monitoring:** Feel free to use tools like GlassWire or Wireshark. You will see traffic only routes to Evony servers and your local Botfather instance.
-3. **Data Protection:** Never enter passwords for anything other than your Evony game accounts within this browser. 
+2. **Network Monitoring:** Feel free to use tools like GlassWire or Wireshark. You will see traffic only routes to game servers and your local Botfather instance.
+3. **Data Protection:** Never enter passwords for anything other than your game accounts within this browser. 
 
 ## Vulnerability Disclosure
 
