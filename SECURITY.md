@@ -2,221 +2,80 @@
 
 ## ⚠️ Important Security Notice
 
-**Flash Browser is built on Electron 9.4.4, which reached end-of-life in March 2021.**
+**Neat Flash Browser is built on Electron 9.4.4, which reached end-of-life in March 2021.**
 
-This application should **ONLY** be used in isolated, sandboxed environments such as virtual machines. Do not use this application for accessing sensitive data, important accounts, or production systems.
+This application is a highly specialized companion tool built exclusively for **The NEAT Botfather**. It should **ONLY** be used to access the Evony web client and your local Botfather dashboard. Do not use this application for accessing sensitive data, banking, important accounts, or general web browsing.
+
+## Custom Security Engineering (v1.3.7)
+
+Because we are forced to use an older version of Electron to maintain PPAPI Flash Player compatibility, we have engineered custom application-level protections to keep our users safe:
+
+### 1. The Smart Escape Pod (HTTPS Bouncer)
+Neat Flash Browser features a custom-built URL router that aggressively monitors navigation. 
+* **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for Evony and `localhost` Botfather UI).
+* **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or external documentation), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
+
+### 2. Chromium Sandbox Restored
+Unlike previous forks of this software, **Neat Flash Browser successfully runs with the Chromium Sandbox enabled.** We eradicated the legacy `--no-sandbox` requirement, mitigating a massive attack vector while simultaneously fixing the "terminal flicker" bug on Windows.
+
+### 3. Open Source Verification
+To ensure absolute community trust, this application cannot "phone home" in secret. Users are encouraged to verify the code themselves:
+* The `app.asar` file can be unpacked by anyone using Node.js (`npx asar extract app.asar src`) to audit the exact JavaScript running on their machine.
+* The Chromium Developer Tools (`Ctrl + Shift + I`) are left enabled by design so users can actively monitor the Network tab and verify traffic is only flowing to `*.evony.com` and `localhost`.
+
+---
 
 ## Known Security Limitations
 
 ### 1. End-of-Life Software
-
-- **Electron 9.4.4** (EOL: March 2021) - No security patches available
-- **Adobe Flash Player** (EOL: January 12, 2021) - No longer supported by Adobe
-- **Node.js 12.14** - Bundled with Electron 9, also reached EOL
+- **Electron 9.4.4** (EOL: March 2021) - No security patches available from the upstream Chromium project.
+- **Adobe Flash Player** (EOL: January 12, 2021) - No longer supported or patched by Adobe.
 
 ### 2. Required Security-Reducing Flags
-
-To support PPAPI Flash Player plugins, the following security flags are **required** and cannot be disabled:
+To support legacy Flash Player plugins and our internal navigation system, the following security flags are required by the engine and cannot be disabled:
 
 | Flag | Risk | Reason Required |
 |------|------|-----------------|
-| `no-sandbox` | Disables process isolation | Required for PPAPI plugin loading on Linux and Windows |
 | `disable-site-isolation-trials` | Reduces cross-site isolation | Required for Flash plugin content access |
-| `ignore-certificate-errors` | Accepts invalid SSL certificates | Many Flash game sites use expired/self-signed certificates |
-| `allow-insecure-localhost` | Permits insecure local connections | Required for local Flash development |
-| `nodeIntegration: true` | Enables Node.js in renderer | Required for electron-navigation and Flash plugin management |
+| `ignore-certificate-errors` | Accepts invalid SSL certificates | Many legacy Flash game endpoints use expired/self-signed certificates |
+| `nodeIntegration: true` | Enables Node.js in renderer | Required by `electron-navigation` |
 | `contextIsolation: false` | Disables context isolation | Required for remote module and Flash plugin communication |
-| `enableRemoteModule: true` | Allows renderer access to main process | Required for navigation system and Flash features |
+| `enableRemoteModule: true` | Allows renderer access to main process | Required for IPC UI routing and the HTTPS Bouncer |
 
-### 3. Dependency Vulnerabilities
+### 3. Dependency Profile
+In version 1.3.7, we aggressively stripped out unused, heavy dependencies (like legacy adblockers and fetch protocols) to reduce the attack surface and memory footprint. 
 
-As of the last update, the following known vulnerabilities exist:
-
-#### electron-navigation (v6.6.6)
-- **Status:** Abandoned package (last update: 4+ years ago)
-- **Vulnerabilities:** 44 known issues
-- **Impact:** Core navigation system, cannot be removed without complete rewrite
-- **Mitigation:** Used in controlled environment only
-
-#### @cliqz/adblocker-electron (v1.23.0)
-- **Peer Dependency Mismatch:** Requires Electron >11, running on 9.4.4
-- **Status:** Working but unsupported configuration
-- **Mitigation:** Can be disabled if compatibility issues arise (see lines 316-321 in index.js)
-
-#### Additional Dependencies
-- Total vulnerabilities: 29 (1 low, 9 moderate, 15 high, 4 critical)
-- These are primarily transitive dependencies with no fixes available for Electron 9
-
-## Security Improvements Implemented
-
-Despite the constraints of Electron 9 EOL status, the following security hardening measures have been implemented:
-
-### Code-Level Protections
-
-1. **URL Validation**
-   - Command-line argument validation for SWF file paths
-   - URL sanitization before setting favorites/homepage
-   - Path traversal detection and warnings
-
-2. **Content Security Policy**
-   - CSP headers added for non-Flash content
-   - Object source restrictions where possible
-   - Script source validation
-
-3. **Error Handling**
-   - Try-catch blocks around all remote module calls
-   - IPC communication error handling
-   - Plugin loading failure detection
-
-4. **Input Sanitization**
-   - URL input validation in navigation bar
-   - Protocol checking (http/https/file only)
-   - Empty input rejection
-
-### Configuration Hardening
-
-- Node.js engine version constraints (12.14.0 to <16.0.0)
-- Documented security trade-offs in code comments
-- Error logging for security-related failures
-
-## Risk Assessment
-
-### High Risk Scenarios
-
-❌ **DO NOT USE FOR:**
-- Banking or financial services
-- Sensitive personal data
-- Production environments
-- Public-facing systems
-- Systems with access to important data
-
-### Acceptable Use Cases
-
-✅ **Appropriate for:**
-- Running legacy Flash games in isolated VMs
-- Flash content preservation and archival
-- Educational purposes in sandboxed environments
-- Testing and development of Flash content
-
-## Recommended Security Practices
-
-### 1. Virtual Machine Isolation
-
-**Required setup:**
-```
-- Run FlashBrowser inside a dedicated VM
-- Use snapshots before each session
-- No shared folders with host system
-- No access to sensitive files/networks
-- Isolated network segment if possible
-```
-
-### 2. Network Isolation
-
-- Use firewall rules to restrict outbound connections
-- Consider VPN or proxy for Flash game sites
-- Monitor network traffic for suspicious activity
-- Block access to internal networks/resources
-
-### 3. Data Protection
-
-- Never enter passwords or sensitive information
-- Do not access email, cloud storage, or authenticated services
-- Clear cache regularly (Ctrl+Shift+F10)
-- Do not download files to important directories
-
-### 4. System Monitoring
-
-- Monitor system resource usage for abnormal behavior
-- Check running processes regularly
-- Review logs for suspicious activity
-- Keep VM snapshots for easy rollback
-
-## Vulnerability Disclosure
-
-If you discover a security vulnerability in FlashBrowser, please report it by:
-
-1. **Opening an issue** on the GitHub repository
-2. **Tagging as** `security` and `vulnerability`
-3. **Providing details:**
-   - Steps to reproduce
-   - Potential impact
-   - Affected versions
-   - Suggested mitigations (if any)
-
-**Please do not** publicly disclose exploit code or detailed attack techniques without giving maintainers time to respond (reasonable disclosure period: 90 days).
-
-## CVE References
-
-### Electron 9.x Known CVEs
-
-The following Common Vulnerabilities and Exposures (CVEs) affect Electron 9.x and have no available patches:
-
-- Various remote code execution vulnerabilities
-- Cross-site scripting (XSS) vulnerabilities in webviews
-- Privilege escalation issues
-- Information disclosure vulnerabilities
-
-For a complete list of Electron 9 CVEs, see:
-- [CVE Details - Electron](https://www.cvedetails.com/vulnerability-list/vendor_id-17824/product_id-44696/version_id-498625/Electronjs-Electron-9.0.html)
-- [Electron Security Advisories](https://github.com/electron/electron/security/advisories)
-
-### Flash Player Known CVEs
-
-Adobe Flash Player has thousands of known CVEs dating back decades. Notable recent CVEs before EOL include:
-- CVE-2020-9746 (RCE)
-- CVE-2020-9633 (RCE)
-- CVE-2020-9632 (Information Disclosure)
-
-## Security Architecture Decisions
-
-### Why Stay on Electron 9?
-
-**Q:** Why not upgrade to the latest Electron?
-
-**A:** PPAPI plugin support (required for Flash Player) was completely removed in Electron 10. No version after 9.x supports PPAPI plugins. Upgrading to Electron 10+ would break Flash functionality entirely.
-
-### Why Not Use Ruffle?
-
-**Q:** Why not migrate to Ruffle (WebAssembly Flash emulator)?
-
-**A:** Ruffle is an excellent alternative for many use cases, but it:
-- Has incomplete Flash API coverage
-- May not support all legacy Flash content
-- Requires significant code refactoring
-- Is a different approach than native PPAPI plugins
-
-Users who don't need native Flash plugin support should consider using Ruffle instead.
-
-### Future Migration Path
-
-When Flash support is no longer required, the recommended migration path is:
-
-1. **Upgrade to Electron LTS** (latest supported version)
-2. **Enable modern security features:**
-   - `contextIsolation: true`
-   - `nodeIntegration: false`
-   - Remove `enableRemoteModule`
-   - Enable sandbox mode
-   - Enable site isolation
-3. **Replace electron-navigation** with modern alternatives
-4. **Remove Flash-specific code** and dependencies
-5. **Implement Content Security Policy** fully
-6. **Add security-focused preload scripts**
-
-## Additional Resources
-
-- [Electron Security Best Practices](https://www.electronjs.org/docs/latest/tutorial/security)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-- [Flash Player EOL Information](https://www.adobe.com/products/flashplayer/end-of-life.html)
-
-## Contact
-
-For security-related questions or concerns, please open an issue on the GitHub repository with the `security` label.
+The primary remaining vulnerability vector is **electron-navigation** (v6.6.6). 
+* **Status:** Abandoned package.
+* **Mitigation:** We have heavily "Monkey Patched" the core functions of this dependency to forcibly route malicious or secure popups out to the native OS shell. 
 
 ---
 
-**Last Updated:** January 2026
-**Electron Version:** 9.4.4 (EOL)
+## Risk Assessment
+
+### ❌ DO NOT USE FOR:
+- Banking, financial services, or shopping
+- Accessing email, cloud storage, or authenticated services
+- General web browsing
+- Navigating to untrusted websites
+
+### ✅ ACCEPTABLE USE CASES:
+- Logging into the Evony web client alongside The NEAT Botfather
+- Accessing `http://localhost:8025` dashboards
+- Flash content preservation in isolated/sandboxed environments (VMs)
+
+## Recommended Security Practices
+
+1. **Virtual Machine Isolation:** For the highest level of security, run Botfather and Neat Flash Browser inside a dedicated Virtual Machine (VM) without shared host folders.
+2. **Network Monitoring:** Feel free to use tools like GlassWire or Wireshark. You will see traffic only routes to Evony servers and your local Botfather instance.
+3. **Data Protection:** Never enter passwords for anything other than your Evony game accounts within this browser. 
+
+## Vulnerability Disclosure
+
+If you discover a vulnerability that bypasses the HTTPS Bouncer or threatens the local Botfather ecosystem, please report it via the **Issues** tab on our GitHub repository. Please tag the issue as `security` and provide reproduction steps.
+
+---
+
+**Last Updated:** May 2026  
+**Electron Version:** 9.4.4 (EOL)  
 **Flash Player Version:** 32.0.0.465 (EOL)
