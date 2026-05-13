@@ -4,7 +4,7 @@
 
 **Neat Flash Browser is built on Electron 9.4.4, which reached end-of-life in March 2021.**
 
-This application is a highly specialized companion tool built exclusively for **The NEAT Botfather**. It should **ONLY** be used to access the Evony web client and your local Botfather dashboard. Do not use this application for accessing sensitive data, banking, important accounts, or general web browsing.
+This application is a highly specialized companion tool built exclusively for **The NEAT Botfather**. It should **ONLY** be used to access the flash game web client and your local Botfather dashboard. Do not use this application for accessing sensitive data, banking, important accounts, or general web browsing.
 
 ## Custom Security Engineering (v1.3.7)
 
