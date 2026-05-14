@@ -4,7 +4,7 @@
 
 **Neat Flash Browser is built on Electron 9.4.4, which reached end-of-life in March 2021.**
 
-This application is a highly specialized companion tool built exclusively for **The NEAT Botfather**. It should **ONLY** be used to access the Evony web client and your local Botfather dashboard. Do not use this application for accessing sensitive data, banking, important accounts, or general web browsing.
+This application is a highly specialized companion tool built exclusively for **The NEAT Botfather**. It should **ONLY** be used to access the flash game web client and your local Botfather dashboard. Do not use this application for accessing sensitive data, banking, important accounts, or general web browsing.
 
 ## Custom Security Engineering (v1.3.7)
 
@@ -12,8 +12,8 @@ Because we are forced to use an older version of Electron to maintain PPAPI Flas
 
 ### 1. The Smart Escape Pod (HTTPS Bouncer)
 Neat Flash Browser features a custom-built URL router that aggressively monitors navigation. 
-* **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for Evony and `localhost` Botfather UI).
-* **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or external documentation), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
+* **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for game flash client and `localhost` Botfather UI).
+* **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or financial system), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
 
 ### 2. Chromium Sandbox Restored
 Unlike previous forks of this software, **Neat Flash Browser successfully runs with the Chromium Sandbox enabled.** We eradicated the legacy `--no-sandbox` requirement, mitigating a massive attack vector while simultaneously fixing the "terminal flicker" bug on Windows.
@@ -21,7 +21,7 @@ Unlike previous forks of this software, **Neat Flash Browser successfully runs w
 ### 3. Open Source Verification
 To ensure absolute community trust, this application cannot "phone home" in secret. Users are encouraged to verify the code themselves:
 * The `app.asar` file can be unpacked by anyone using Node.js (`npx asar extract app.asar src`) to audit the exact JavaScript running on their machine.
-* The Chromium Developer Tools (`Ctrl + Shift + I`) are left enabled by design so users can actively monitor the Network tab and verify traffic is only flowing to `*.evony.com` and `localhost`.
+* The Chromium Developer Tools (`Ctrl + Shift + I`) are left enabled by design so users can actively monitor the Network tab and verify traffic is only flowing to `*.ev0ny.com` and `localhost`.
 
 ---
 
@@ -60,15 +60,15 @@ The primary remaining vulnerability vector is **electron-navigation** (v6.6.6).
 - Navigating to untrusted websites
 
 ### ✅ ACCEPTABLE USE CASES:
-- Logging into the Evony web client alongside The NEAT Botfather
+- Logging into the flash game web client alongside The NEAT Botfather
 - Accessing `http://localhost:8025` dashboards
 - Flash content preservation in isolated/sandboxed environments (VMs)
 
 ## Recommended Security Practices
 
 1. **Virtual Machine Isolation:** For the highest level of security, run Botfather and Neat Flash Browser inside a dedicated Virtual Machine (VM) without shared host folders.
-2. **Network Monitoring:** Feel free to use tools like GlassWire or Wireshark. You will see traffic only routes to Evony servers and your local Botfather instance.
-3. **Data Protection:** Never enter passwords for anything other than your Evony game accounts within this browser. 
+2. **Network Monitoring:** Feel free to use tools like GlassWire or Wireshark. You will see traffic only routes to game servers and your local Botfather instance.
+3. **Data Protection:** Never enter passwords for anything other than your game accounts within this browser. 
 
 ## Vulnerability Disclosure
 
