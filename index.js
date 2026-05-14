@@ -483,39 +483,64 @@ autoUpdater.on('update-downloaded', () => {
     sendWindow('update-downloaded', 'Update downloaded');
     autoUpdater.quitAndInstall();
 }); */
-
 // ==========================================
 // --- NEAT FLASH BROWSER: SMART ESCAPE POD ---
 // ==========================================
 exports.openSecureUrl = (url) => {
-    const fs = require('fs');
     const { spawn } = require('child_process');
+    
+    const targetUrl = url;
+    const isHttps = targetUrl.toLowerCase().startsWith('https://');
+    
+    // Read the user's custom path directly from the existing Store instance
+    const customBrowserPath = store.get('secureBrowserPath');
 
-    // The precise fallback sequence: Chrome -> Firefox -> Brave -> Edge
-    const browserPaths = [
-        `${process.env.PROGRAMFILES}\\Google\\Chrome\\Application\\chrome.exe`,
-        `${process.env['PROGRAMFILES(X86)']}\\Google\\Chrome\\Application\\chrome.exe`,
-        `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
-        `${process.env.PROGRAMFILES}\\Mozilla Firefox\\firefox.exe`,
-        `${process.env.PROGRAMFILES}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
-        `${process.env['PROGRAMFILES(X86)']}\\Microsoft\\Edge\\Application\\msedge.exe`
-    ];
-
-    let launched = false;
-    for (let browserExe of browserPaths) {
-        if (fs.existsSync(browserExe)) {
-            // Spawn the browser completely detached from Neat Flash Browser
-            spawn(browserExe, [url], { detached: true, stdio: 'ignore' }).unref();
-            launched = true;
-            console.log(`[Bouncer] Escaped to: ${browserExe}`);
-            break;
+    // Helper: Throws a Native OS Warning Box
+    function showSecurityErrorPage(blockedUrl) {
+        const { dialog } = require('electron');
+        
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            dialog.showMessageBox(mainWindow, {
+                type: 'warning',
+                title: 'Security Blocked',
+                message: 'Secure Browser Required',
+                detail: `You attempted to open a secure link:\n${blockedUrl}\n\nBecause Neat Flash Browser is sandboxed, no HTTPS links are allowed to load here.\n\nPlease open the Settings menu and use the Dropdown to select your Google Chrome, Edge, or Firefox executable so Neat Flash Browser can safely route this traffic!`,
+                buttons: ['Understood']
+            });
         }
     }
 
-    // Ultimate Fail-safe: If they literally have none of those installed
-    if (!launched) {
-        console.log("[Bouncer] No standard browsers found. Falling back to OS Shell.");
-        require('electron').shell.openExternal(url);
+    if (isHttps) {
+        // If they haven't picked an executable yet, trap it immediately!
+        if (!customBrowserPath || customBrowserPath.trim() === '') {
+            showSecurityErrorPage(targetUrl);
+            return; 
+        }
+
+        // DIRECT BINARY EXECUTION
+        try {
+            const isMac = process.platform === 'darwin';
+
+            if (isMac) {
+                // macOS requires "open -a" to launch .app bundles properly
+                spawn('open', ['-a', customBrowserPath, targetUrl]);
+            } else {
+                // Windows and Linux execute the binary path directly
+                spawn(customBrowserPath, [targetUrl], { detached: true });
+            }
+            console.log(`[Bouncer] Escaped to custom browser: ${customBrowserPath}`);
+        } catch (err) {
+            console.error("Custom browser execution crashed:", err);
+            // If the spawn fails (e.g. they deleted the browser they selected), trap it!
+            showSecurityErrorPage(targetUrl);
+        }
+    } else {
+        // Safe HTTP Link (e.g. localhost Botfather dashboard) opens normally inside Flash Browser
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('open-new-tab', { 
+                url: encodeURIComponent(targetUrl), 
+                title: encodeURIComponent('External Link') 
+            });
+        }
     }
 };
-

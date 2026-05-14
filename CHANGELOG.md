@@ -2,6 +2,9 @@ Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+[1.3.9] - 2026-05-13
+Implemented Smart Browser Auto-Detect, Inline Favorite editing, and Native Security Dialogs
+
 [1.3.7] - 2026-05-13
 Summary
 This massive update officially rebrands the project to Neat Flash Browser, transforming it into a purpose-built companion for The NEAT Botfather. It focuses on eradicating Chromium process bugs, overhauling the user interface, slimming down dependencies, and implementing a strict URL router to sandbox legacy Flash content from modern HTTPS web traffic.

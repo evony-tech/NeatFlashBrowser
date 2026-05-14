@@ -26,6 +26,12 @@
         flex-direction: row;
         align-items: center;
     }
+
+    /* THE FIX: Hide ugly Chromium scrollbars from the UI menus! */
+    ::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+    }
 </style>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden; background-color: #202124; height: 100vh; display: flex; flex-direction: column;">
@@ -42,15 +48,28 @@
             
             <h2 style="margin-top: 0; text-align: center;">⚙️ Settings & Favorites</h2>
             <hr style="border: 1px solid #444; margin-bottom: 20px;">
-            <button onclick="makeDefaultBrowser()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #0275d8; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🌐 Set as Default HTTP Browser</button>
-             
+            <button onclick="makeDefaultBrowser()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #0275d8; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🌐 Set default browser</button>
+            <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 15px; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 15px;">
+                <label style="color: #c9d1d9; font-weight: bold; font-size: 14px;">Select Secure (https) Browser:</label>
+                <div style="margin-top: 8px;">
+                    <select id="browser-dropdown" style="width: 100%; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; border-radius: 4px; outline: none; font-size: 13px;">
+                        <option value="">-- No Browser Selected (HTTPS Blocked) --</option>
+                        <option value="custom">📁 Browse for Custom Executable...</option>
+                    </select>
+                </div>
+            </div>
             <button onclick="dispachClearCache()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #d9534f; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🗑️ Clear Cache & Restart</button>
             <button onclick="clearAllFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #f0ad4e; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">⚠️ Clear All Favorites</button>
+            
             <button onclick="document.getElementById('overlay').style.display='none'" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #5cb85c; border: none; padding: 10px; width: 100%; border-radius: 5px;">✅ Close Menu</button>
             <div style="text-align: center; color: #888; font-size: 12px; margin-top: 25px; border-top: 1px solid #444; padding-top: 15px; line-height: 1.5;">
+                
                 <b style="color: #bbb; font-size: 14px;">Neat Flash Browser</b><br>
                 <span id="app-version-display">Version: Loading...</span><br>
-                Engineered for The NEAT Botfather by Evony-Tech
+                Engineered for The NEAT Botfather by Evony-Tech<br>
+                <div style="margin-top: 5px;">
+                    <a href="#" onclick="openGitHubLink(event)" style="color: #58a6ff; text-decoration: none; font-size: 13px;">Check for updates on GitHub</a>
+                </div>
             </div>
         </div>
     </div>
@@ -102,12 +121,20 @@
             return btn;
         }
 
-        // 2. Initialize Navigation (Address bar creates here)
         const enav = new (require('electron-navigation'))({
             defaultFavicons: true,
             newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
             newTabCallback: (url, options) => {
                 options.webviewAttributes = { plugins: '' };
+                options.postTabOpenCallback = webview => {
+                    // THE FIX: Guard the inner webview from Address Bar typing!
+                    webview.addEventListener('will-navigate', (e) => {
+                        if (e.url.toLowerCase().startsWith('https://')) {
+                            webview.stop(); // Abort the load inside Flash
+                            remote.require('./index').openSecureUrl(e.url); // Send to Bouncer
+                        }
+                    });
+                };
                 return {options};
             }
         });
@@ -180,11 +207,11 @@
             const newUrl = data.url ? decodeURIComponent(data.url) : 'none';
             const newTitle = data.title ? decodeURIComponent(data.title) : 'Neat Flash Browser';
             
-            if (newUrl !== "none" && newUrl.startsWith('http')) {
+            // THE FIX: Whitelist "data:" so our Error Page can spawn!
+            if (newUrl !== "none" && (newUrl.startsWith('http') || newUrl.startsWith('data:'))) {
                 enav.newTab(newUrl, { title: newTitle });
                 
-                // FIX: Only auto-save on second clicks if the backend confirmed it was Botfather
-                if (data.isBotfather) {
+                if (data.isBotfather && newUrl.startsWith('http')) {
                     saveToFavorites(newUrl, newTitle);
                 }
             }
@@ -223,7 +250,9 @@
                 let match = title.match(/^\[(.*?)\]\s*(.*)$/);
                 if (match) { server = match[1].toUpperCase(); name = match[2]; }
                 if (!groups[server]) groups[server] = [];
-                groups[server].push({ url: fav.url, name: name, idx: idx });
+                
+                // THE FIX: We now pass the "fullTitle" so the edit box loads the brackets!
+                groups[server].push({ url: fav.url, name: name, fullTitle: title, idx: idx });
             });
 
             for (let srv in groups) {
@@ -264,12 +293,72 @@
                         document.getElementById('fav-backdrop').style.display='none';
                     };
 
+                    // --- THE FIX: RENAME & DELETE BUTTONS ---
+                    let editBtn = document.createElement('span');
+                    editBtn.innerHTML = "✏️";
+                    editBtn.style.cursor = "pointer";
+                    editBtn.style.fontSize = "12px";
+                    editBtn.style.marginLeft = "10px";
+                    editBtn.title = "Rename Bookmark";
+                    
                     let delBtn = document.createElement('span');
                     delBtn.innerHTML = "❌";
                     delBtn.style.cursor = "pointer";
                     delBtn.style.fontSize = "12px";
                     delBtn.style.marginLeft = "10px";
                     delBtn.title = "Delete Bookmark";
+                    
+                    let actionDiv = document.createElement('div');
+                    actionDiv.appendChild(editBtn);
+                    actionDiv.appendChild(delBtn);
+
+                    // --- INLINE EDITOR LOGIC ---
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        a.style.display = 'none'; // Hide the link
+                        actionDiv.style.display = 'none'; // Hide the buttons
+
+                        let editContainer = document.createElement('div');
+                        editContainer.style.display = 'flex';
+                        editContainer.style.flex = '1';
+
+                        let input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = item.fullTitle; // Loads the full "[ss82] Name" string
+                        input.style.flex = '1';
+                        input.style.background = '#21262d';
+                        input.style.color = '#c9d1d9';
+                        input.style.border = '1px solid #30363d';
+                        input.style.padding = '2px 5px';
+                        input.style.outline = 'none';
+                        input.style.borderRadius = '3px';
+
+                        let saveBtn = document.createElement('button');
+                        saveBtn.innerHTML = "💾";
+                        saveBtn.style.background = 'none';
+                        saveBtn.style.border = 'none';
+                        saveBtn.style.cursor = 'pointer';
+                        saveBtn.style.marginLeft = '5px';
+
+                        let saveAction = () => {
+                            let newTitle = input.value.trim();
+                            if (newTitle !== "") {
+                                let currentFavs = store.get('favorites') || [];
+                                currentFavs[item.idx].title = newTitle;
+                                store.set('favorites', currentFavs);
+                                renderFavDropdown(); // Instantly rebuilds and categorizes!
+                            }
+                        };
+
+                        saveBtn.onclick = (ev) => { ev.stopPropagation(); saveAction(); };
+                        input.onkeypress = (ev) => { if (ev.key === 'Enter') saveAction(); };
+
+                        editContainer.appendChild(input);
+                        editContainer.appendChild(saveBtn);
+                        itemDiv.insertBefore(editContainer, itemDiv.firstChild);
+                        input.focus();
+                    };
+
                     delBtn.onclick = () => {
                         let currentFavs = store.get('favorites') || [];
                         currentFavs.splice(item.idx, 1); 
@@ -278,7 +367,7 @@
                     };
 
                     itemDiv.appendChild(a);
-                    itemDiv.appendChild(delBtn);
+                    itemDiv.appendChild(actionDiv);
                     list.appendChild(itemDiv);
                 });
                 det.appendChild(list);
@@ -307,9 +396,144 @@
         window.dispachClearCache = () => ipcRenderer.send('clearChache-click');
         window.clearAllFavorites = () => remote.require('./index.js').removeAllFav();
         window.makeDefaultBrowser = () => {
+            // 1. Injects the required Registry Keys so Windows knows this app is a browser
             remote.app.setAsDefaultProtocolClient('http');
-            remote.shell.openExternal('ms-settings:defaultapps?registeredApp=NeatFlashBrowser');
+            
+            // 2. Safely open the Default Apps menu for Windows users
+            if (process.platform === 'win32') {
+                remote.shell.openExternal('ms-settings:defaultapps');
+            } else if (process.platform === 'darwin') {
+                // Failsafe for Mac users trying to click it
+                remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+                    type: 'info',
+                    title: 'Mac OS',
+                    message: 'Please go to System Preferences > General to change your default browser.'
+                });
+            }
         };
+
+        // ==========================================
+        // 9. SMART SECURE BROWSER AUTO-DETECTION
+        // ==========================================
+        const { dialog } = remote;
+        const fs = require('fs');
+
+        window.openGitHubLink = (e) => {
+            e.preventDefault();
+            remote.require('./index').openSecureUrl("https://github.com/evony-tech/NeatFlashBrowser/releases");
+        };
+
+        const browserDropdown = document.getElementById('browser-dropdown');
+        let savedBrowserPath = store.get('secureBrowserPath') || '';
+
+        // 1. Scan the OS for installed browsers
+        function getCommonBrowsers() {
+            const browsers = [];
+            const isWin = process.platform === 'win32';
+            const isMac = process.platform === 'darwin';
+
+            if (isWin) {
+                const paths = {
+                    'Google Chrome': [
+                        process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
+                        process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe',
+                        process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe'
+                    ],
+                    'Microsoft Edge': [
+                        process.env['PROGRAMFILES(X86)'] + '\\Microsoft\\Edge\\Application\\msedge.exe',
+                        process.env.PROGRAMFILES + '\\Microsoft\\Edge\\Application\\msedge.exe'
+                    ],
+                    'Mozilla Firefox': [
+                        process.env.PROGRAMFILES + '\\Mozilla Firefox\\firefox.exe',
+                        process.env['PROGRAMFILES(X86)'] + '\\Mozilla Firefox\\firefox.exe'
+                    ]
+                };
+                for (const [name, possiblePaths] of Object.entries(paths)) {
+                    for (const p of possiblePaths) {
+                        if (p && fs.existsSync(p)) {
+                            browsers.push({ name: name, path: p });
+                            break;
+                        }
+                    }
+                }
+            } else if (isMac) {
+                const paths = {
+                    'Google Chrome': '/Applications/Google Chrome.app',
+                    'Microsoft Edge': '/Applications/Microsoft Edge.app',
+                    'Mozilla Firefox': '/Applications/Firefox.app',
+                    'Safari': '/Applications/Safari.app'
+                };
+                for (const [name, p] of Object.entries(paths)) {
+                    if (fs.existsSync(p)) {
+                        browsers.push({ name: name, path: p });
+                    }
+                }
+            }
+            return browsers;
+        }
+
+        // 2. Populate the Dropdown Menu
+        function populateDropdown() {
+            const detectedBrowsers = getCommonBrowsers();
+            
+            // Clear old options (keep the first 'Empty' and last 'Custom' options)
+            while (browserDropdown.options.length > 2) {
+                browserDropdown.remove(1);
+            }
+
+            // Inject detected browsers
+            detectedBrowsers.reverse().forEach(b => {
+                let opt = document.createElement('option');
+                opt.value = b.path;
+                opt.text = `🌐 ${b.name}`;
+                browserDropdown.add(opt, 1);
+            });
+
+            // If their saved path is custom, inject it so the dropdown selects it
+            if (savedBrowserPath) {
+                let pathExists = Array.from(browserDropdown.options).some(opt => opt.value === savedBrowserPath);
+                if (!pathExists && savedBrowserPath !== 'custom') {
+                    let opt = document.createElement('option');
+                    opt.value = savedBrowserPath;
+                    opt.text = `🔧 Custom Executable`;
+                    browserDropdown.add(opt, browserDropdown.options.length - 1);
+                }
+                browserDropdown.value = savedBrowserPath;
+            } else {
+                browserDropdown.value = "";
+            }
+        }
+
+        populateDropdown();
+
+        // 3. Handle User Selection
+        browserDropdown.addEventListener('change', async (e) => {
+            const selectedVal = e.target.value;
+
+            if (selectedVal === 'custom') {
+                const isWin = process.platform === 'win32';
+                const isMac = process.platform === 'darwin';
+                const filters = [];
+                if (isWin) filters.push({ name: 'Browser Executable', extensions: ['exe'] });
+                else if (isMac) filters.push({ name: 'Mac Application', extensions: ['app'] });
+
+                const result = await dialog.showOpenDialog(remote.getCurrentWindow(), {
+                    properties: ['openFile'],
+                    filters: filters
+                });
+
+                if (!result.canceled && result.filePaths.length > 0) {
+                    savedBrowserPath = result.filePaths[0];
+                    store.set('secureBrowserPath', savedBrowserPath);
+                    populateDropdown(); // Refresh UI to show the new custom file
+                } else {
+                    browserDropdown.value = savedBrowserPath || ""; // Revert if cancelled
+                }
+            } else {
+                savedBrowserPath = selectedVal;
+                store.set('secureBrowserPath', savedBrowserPath);
+            }
+        });
     </script>
     </body>
 </html>
