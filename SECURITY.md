@@ -13,7 +13,7 @@ Because we are forced to use an older version of Electron to maintain PPAPI Flas
 ### 1. The Smart Escape Pod (HTTPS Bouncer)
 Neat Flash Browser features a custom-built URL router that aggressively monitors navigation. 
 * **Local & HTTP Traffic:** Permitted to render inside the Flash environment (used for game flash client and `localhost` Botfather UI).
-* **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or external documentation), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
+* **HTTPS Traffic:** Strictly forbidden. If a user clicks an `https://` link (such as PayPal, YouTube, or financial system), the browser's "Monkey Patch" intercepts the request before a tab is ever created. It uses `child_process.spawn` to physically eject the URL directly to your native Windows OS browser (Chrome, Firefox, Brave, or Edge), keeping your secure browsing completely isolated from the Flash container.
 
 ### 2. Chromium Sandbox Restored
 Unlike previous forks of this software, **Neat Flash Browser successfully runs with the Chromium Sandbox enabled.** We eradicated the legacy `--no-sandbox` requirement, mitigating a massive attack vector while simultaneously fixing the "terminal flicker" bug on Windows.
@@ -21,7 +21,7 @@ Unlike previous forks of this software, **Neat Flash Browser successfully runs w
 ### 3. Open Source Verification
 To ensure absolute community trust, this application cannot "phone home" in secret. Users are encouraged to verify the code themselves:
 * The `app.asar` file can be unpacked by anyone using Node.js (`npx asar extract app.asar src`) to audit the exact JavaScript running on their machine.
-* The Chromium Developer Tools (`Ctrl + Shift + I`) are left enabled by design so users can actively monitor the Network tab and verify traffic is only flowing to `*.evony.com` and `localhost`.
+* The Chromium Developer Tools (`Ctrl + Shift + I`) are left enabled by design so users can actively monitor the Network tab and verify traffic is only flowing to `*.ev0ny.com` and `localhost`.
 
 ---
 
