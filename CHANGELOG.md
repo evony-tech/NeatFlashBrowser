@@ -1,10 +1,39 @@
 Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+## [1.3.11] - 2026-05-14
 
-[1.3.9] - 2026-05-13
-Implemented Smart Browser Auto-Detect, Inline Favorite editing, and Native Security Dialogs
+### Summary
+This update restores essential right-click functionality inside the browser tabs, giving users back their native copy, cut, and paste controls that were previously blocked by the sandboxed webviews.
 
+### Added
+- **Smart Context Menu:** Implemented a native right-click menu across all active browser tabs. The menu is dynamically context-aware:
+  - Displays **Copy** only when text is actively highlighted.
+  - Displays **Cut** and **Paste** only when clicking inside an editable text field (e.g., login screens, chat boxes, or forms).
+  - Always provides a **Select All** option for quick data highlighting.
+
+### Fixed
+- **Right-Click Swallowing:** Bypassed a core Chromium sandboxing limitation where the inner `<webview>` tags were completely ignoring right-click events, preventing users from easily copying data or pasting complex passwords into the Evony client or Botfather dashboards.
+
+## [1.3.9] - 2026-05-14
+
+### Summary
+This update introduces the Smart Auto-Detect Engine for the HTTPS Bouncer, allowing the browser to automatically scan your OS for installed external browsers. It also brings massive quality-of-life upgrades to the Favorites system and seals two navigation bypass leaks.
+
+### Added
+- **Smart Browser Auto-Detection:** The Settings menu now automatically scans Windows and macOS for installed secure browsers (Google Chrome, Microsoft Edge, Mozilla Firefox, and Safari) and populates them into an easy-to-use dropdown menu.
+- **Custom Executable Picker:** Added a native OS file picker fallback for users who install their secure browsers in non-standard directories.
+- **Inline Favorite Editing & Auto-Folders:** You can now rename favorites directly in the dropdown menu. Renaming a favorite using the `[Server] Name` format (e.g., `[SS82] Farm`) will dynamically generate a clean, collapsible folder for that server and group the accounts inside it.
+- **Update Link:** Added a direct "Check for updates on GitHub" link in the Settings menu that safely routes through the Escape Pod.
+
+### Changed
+- **Native OS Warnings:** When an HTTPS link is blocked and no secure browser is configured, the browser no longer attempts to render an HTML error page. It now triggers a clean, Native OS Warning Dialog that pauses the application and explains how to configure the settings.
+- **Default Browser Assignment:** Clicking "Set default browser" now automatically opens the native Windows `ms-settings:defaultapps` page, making it much easier for users to assign the browser at the OS level.
+- **UI Polish:** Stripped out the bulky, light-grey Chromium scrollbars from the Settings overlay and Favorites menu. The menus remain fully scrollable via mouse wheel but look much cleaner in dark mode.
+
+### Fixed
+- **Address Bar Leak:** Fixed a vulnerability where manually typing an `https://` link directly into the address bar would bypass the outer window's Bouncer. The Bouncer now actively monitors the inner `<webview>` tag's `will-navigate` events.
+- **Data URI Glitch:** Fixed an issue where the legacy `electron-navigation` library would mistakenly send internal `data:` URIs to Google Search instead of rendering them.
 [1.3.7] - 2026-05-13
 Summary
 This massive update officially rebrands the project to Neat Flash Browser, transforming it into a purpose-built companion for The NEAT Botfather. It focuses on eradicating Chromium process bugs, overhauling the user interface, slimming down dependencies, and implementing a strict URL router to sandbox legacy Flash content from modern HTTPS web traffic.

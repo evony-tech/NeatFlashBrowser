@@ -396,6 +396,7 @@ function homeSetter(a){
 // 1. Auto-Save from Botfather
 exports.autoSaveFavorite = (url, title) => {
     let favs = store.get('favorites') || [];
+	if (!Array.isArray(favs)) favs = []; // THE FIX
     
     // Upgrade any old plain-string URLs to objects
     favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
@@ -414,6 +415,7 @@ exports.autoSaveFavorite = (url, title) => {
 // 2. Manual Save (When you click the Star button)
 exports.setFavorite = (url) => {
     let favs = store.get('favorites') || [];
+	if (!Array.isArray(favs)) favs = []; // THE FIX
     favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
     
     if(favs.findIndex(f => f.url === url) === -1) {
@@ -426,6 +428,7 @@ exports.setFavorite = (url) => {
 // 3. Remove Single Favorite
 exports.removeFav = (index) => {
     let favs = store.get('favorites') || [];
+	if (!Array.isArray(favs)) favs = []; // THE FIX
     let updatedFavs = []; 
     for (var i = 0; i < favs.length; i++){
         if (i !== index) updatedFavs.push(favs[i]);

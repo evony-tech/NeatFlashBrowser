@@ -59,6 +59,12 @@
                 </div>
             </div>
             <button onclick="dispachClearCache()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #d9534f; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🗑️ Clear Cache & Restart</button>
+        
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button onclick="exportFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #17a2b8; border: none; padding: 10px; width: 50%; border-radius: 5px;">📤 Export</button>
+                <button onclick="importFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #17a2b8; border: none; padding: 10px; width: 50%; border-radius: 5px;">📥 Import</button>
+            </div>
+
             <button onclick="clearAllFavorites()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #f0ad4e; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">⚠️ Clear All Favorites</button>
             
             <button onclick="document.getElementById('overlay').style.display='none'" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #5cb85c; border: none; padding: 10px; width: 100%; border-radius: 5px;">✅ Close Menu</button>
@@ -121,17 +127,54 @@
             return btn;
         }
 
+        // 2. Initialize Navigation (Address bar creates here)
         const enav = new (require('electron-navigation'))({
             defaultFavicons: true,
             newTabParams: ['http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" }],
             newTabCallback: (url, options) => {
                 options.webviewAttributes = { plugins: '' };
                 options.postTabOpenCallback = webview => {
-                    // THE FIX: Guard the inner webview from Address Bar typing!
+                    // 1. Guard the inner webview from Address Bar typing!
                     webview.addEventListener('will-navigate', (e) => {
                         if (e.url.toLowerCase().startsWith('https://')) {
                             webview.stop(); // Abort the load inside Flash
                             remote.require('./index').openSecureUrl(e.url); // Send to Bouncer
+                        }
+                    });
+
+                    // 2. THE NEW FIX: Native Right-Click Context Menu
+                    webview.addEventListener('context-menu', (e) => {
+                        const { Menu, MenuItem } = remote;
+                        const menu = new Menu();
+                        
+                        // If they highlighted text, give them the Copy option
+                        if (e.params.selectionText) {
+                            menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
+                        }
+                        
+                        // If they right-clicked inside an input field, give them Cut/Paste
+                        if (e.params.isEditable) {
+                            menu.append(new MenuItem({ label: 'Cut', role: 'cut' }));
+                            menu.append(new MenuItem({ label: 'Paste', role: 'paste' }));
+                        }
+                        
+                        // Always give them Select All
+                        menu.append(new MenuItem({ type: 'separator' }));
+                        menu.append(new MenuItem({ label: 'Select All', role: 'selectAll' }));
+
+                        // Only popup if there is actually something to show
+                        if (menu.items.length > 1 || (menu.items.length === 1 && menu.items[0].type !== 'separator')) {
+                            menu.popup({ window: remote.getCurrentWindow() });
+                        }
+                    });
+
+                    // ==========================================
+                    // 3. THE FIX: XML BACKGROUND INJECTOR
+                    // Override the dark theme to make black XML text readable!
+                    // ==========================================
+                    webview.addEventListener('dom-ready', () => {
+                        if (webview.getURL().toLowerCase().endsWith('.xml')) {
+                            webview.insertCSS('html, body { background-color: rgb(194, 139, 86) !important; }');
                         }
                     });
                 };
@@ -218,7 +261,9 @@
         });
 
         function saveToFavorites(url, title) {
-            let favs = store.get('favorites') || [];
+            let favs = store.get('favorites');
+            if (!Array.isArray(favs)) favs = []; // THE FIX: Prevent Object type crashes
+            
             favs = favs.map(f => typeof f === 'string' ? { url: f, title: 'Saved Link' } : f);
             let existingIndex = favs.findIndex(f => f.url === url);
             if (existingIndex === -1) {
@@ -241,7 +286,9 @@
             };
             container.appendChild(addBtn);
 
-            let favs = store.get('favorites') || [];
+            let favs = store.get('favorites');
+            if (!Array.isArray(favs)) favs = [];
+
             let groups = {};
             favs.forEach((fav, idx) => {
                 let title = (typeof fav === 'string' ? 'Saved Link' : fav.title) || 'Saved Link';
@@ -411,6 +458,68 @@
                 });
             }
         };
+        // --- NEW: IMPORT / EXPORT FAVORITES ---
+        window.exportFavorites = async () => {
+            let favs = store.get('favorites');
+            if (!Array.isArray(favs)) favs = [];
+            
+            if (favs.length === 0) {
+                remote.dialog.showMessageBox({ type: 'info', title: 'Export', message: 'You have no favorites to export.' });
+                return;
+            }
+
+            const result = await remote.dialog.showSaveDialog({
+                title: 'Export Favorites',
+                defaultPath: 'NeatFavorites.json',
+                filters: [{ name: 'JSON Files', extensions: ['json'] }]
+            });
+
+            if (!result.canceled && result.filePath) {
+                const fs = require('fs');
+                fs.writeFileSync(result.filePath, JSON.stringify(favs, null, 2));
+                remote.dialog.showMessageBox({ type: 'info', title: 'Export Successful', message: 'Favorites exported successfully!' });
+            }
+        };
+
+        window.importFavorites = async () => {
+            const result = await remote.dialog.showOpenDialog({
+                title: 'Import Favorites',
+                properties: ['openFile'],
+                filters: [{ name: 'JSON Files', extensions: ['json'] }]
+            });
+
+            if (!result.canceled && result.filePaths.length > 0) {
+                try {
+                    const fs = require('fs');
+                    const data = fs.readFileSync(result.filePaths[0], 'utf-8');
+                    let importedFavs = JSON.parse(data);
+                    
+                    if (!Array.isArray(importedFavs)) throw new Error("Invalid file format. Expected a JSON array.");
+
+                    let currentFavs = store.get('favorites');
+                    if (!Array.isArray(currentFavs)) currentFavs = [];
+
+                    let addedCount = 0;
+                    importedFavs.forEach(f => {
+                        let url = typeof f === 'string' ? f : f.url;
+                        let title = typeof f === 'string' ? 'Saved Link' : (f.title || 'Saved Link');
+                        
+                        // Prevent exact URL duplicates from being imported
+                        if (url && currentFavs.findIndex(ex => ex.url === url) === -1) {
+                            currentFavs.push({ url: url, title: title });
+                            addedCount++;
+                        }
+                    });
+
+                    store.set('favorites', currentFavs);
+                    if (typeof renderFavDropdown === 'function') renderFavDropdown(); // Refresh the UI behind the scenes
+                    
+                    remote.dialog.showMessageBox({ type: 'info', title: 'Import Successful', message: `Successfully imported ${addedCount} new favorites!` });
+                } catch (err) {
+                    remote.dialog.showErrorBox('Import Failed', 'Failed to parse file: ' + err.message);
+                }
+            }
+        };
 
         // ==========================================
         // 9. SMART SECURE BROWSER AUTO-DETECTION
@@ -433,21 +542,25 @@
             const isMac = process.platform === 'darwin';
 
             if (isWin) {
+                // THE FIX: Explicitly grab the 64-bit Program Files directory to bypass Windows 32-bit redirection!
+                const prog64 = process.env.ProgramW6432;
+                const prog32 = process.env['PROGRAMFILES(X86)'];
+                const prog = process.env.PROGRAMFILES;
+                const localAppData = process.env.LOCALAPPDATA;
+
+                // Helper to dynamically build and deduplicate valid paths
+                function buildPaths(suffix) {
+                    let bases = [prog64, prog32, prog, localAppData].filter(Boolean);
+                    return [...new Set(bases.map(b => b + suffix))];
+                }
+
                 const paths = {
-                    'Google Chrome': [
-                        process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
-                        process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe',
-                        process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe'
-                    ],
-                    'Microsoft Edge': [
-                        process.env['PROGRAMFILES(X86)'] + '\\Microsoft\\Edge\\Application\\msedge.exe',
-                        process.env.PROGRAMFILES + '\\Microsoft\\Edge\\Application\\msedge.exe'
-                    ],
-                    'Mozilla Firefox': [
-                        process.env.PROGRAMFILES + '\\Mozilla Firefox\\firefox.exe',
-                        process.env['PROGRAMFILES(X86)'] + '\\Mozilla Firefox\\firefox.exe'
-                    ]
+                    'Google Chrome': buildPaths('\\Google\\Chrome\\Application\\chrome.exe'),
+                    'Microsoft Edge': buildPaths('\\Microsoft\\Edge\\Application\\msedge.exe'),
+                    'Mozilla Firefox': buildPaths('\\Mozilla Firefox\\firefox.exe'),
+                    'Brave Browser': buildPaths('\\BraveSoftware\\Brave-Browser\\Application\\brave.exe')
                 };
+
                 for (const [name, possiblePaths] of Object.entries(paths)) {
                     for (const p of possiblePaths) {
                         if (p && fs.existsSync(p)) {
@@ -517,7 +630,8 @@
                 if (isWin) filters.push({ name: 'Browser Executable', extensions: ['exe'] });
                 else if (isMac) filters.push({ name: 'Mac Application', extensions: ['app'] });
 
-                const result = await dialog.showOpenDialog(remote.getCurrentWindow(), {
+                // THE FIX: Remove 'remote.getCurrentWindow()' to prevent IPC freezing on certain Windows builds!
+                const result = await dialog.showOpenDialog({
                     properties: ['openFile'],
                     filters: filters
                 });

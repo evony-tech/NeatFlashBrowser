@@ -4,7 +4,7 @@
   "description": "Browser For Flash Player Games",
   "homepage": "http://neato3.com/neatflashbrowser",
   "author": "Evony-Tech",
-  "version": "1.3.9",
+  "version": "1.4.1",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
