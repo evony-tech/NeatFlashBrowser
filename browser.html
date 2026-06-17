@@ -169,13 +169,20 @@
                     });
 
                     // ==========================================
-                    // 3. THE FIX: XML BACKGROUND INJECTOR
-                    // Override the dark theme to make black XML text readable!
+                    // 3. THE FIX: UNIVERSAL DARK MODE FOR RAW DATA
+                    // Checks the actual MIME type instead of the URL string!
                     // ==========================================
                     webview.addEventListener('dom-ready', () => {
-                        if (webview.getURL().toLowerCase().endsWith('.xml')) {
-                            webview.insertCSS('html, body { background-color: rgb(194, 139, 86) !important; }');
-                        }
+                        webview.executeJavaScript(`
+                            (function() {
+                                const type = document.contentType.toLowerCase();
+                                if (type.includes('json') || type.includes('xml') || type.includes('plain')) {
+                                    const style = document.createElement('style');
+                                    style.textContent = 'html, body, pre { background-color: #1e1e1e !important; color: white !important; word-wrap: break-word; }';
+                                    document.documentElement.appendChild(style);
+                                }
+                            })();
+                        `);
                     });
                 };
                 return {options};

@@ -1,6 +1,21 @@
 Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+## [1.4.1] - 2026-05-19
+
+### Summary
+This update brings robust Import/Export tools for Favorites, a specialized XML reading theme, and crucial bug fixes for Electron IPC deadlocks and 64-bit Windows environment pathing.
+
+### Added
+- **Import & Export Favorites:** Added side-by-side Export and Import buttons in the Settings overlay. Users can now easily backup their dashboards to a JSON file or migrate them to a new PC. The importer features smart-merging to automatically prevent exact URL duplicates.
+- **XML Readability Theme:** The browser now actively listens for `.xml` file extensions (like Evony battle reports) and dynamically injects a custom `rgb(194, 139, 86)` background color. This ensures raw black text is perfectly readable without sacrificing the browser's global dark theme for other dashboards.
+- **Brave Browser Support:** Added Brave Browser to the HTTPS secure browser auto-detection list.
+
+### Fixed
+- **64-Bit Browser Auto-Detection:** Bypassed Windows 32-bit folder redirection (where the 32-bit Flash browser was being lied to by the OS and redirected to `Program Files (x86)`). By explicitly querying the `ProgramW6432` environment variable, the Settings menu can now successfully detect 64-bit installations of Chrome, Edge, and Firefox.
+- **File Picker IPC Deadlock:** Removed the parent window binding (`remote.getCurrentWindow()`) from Electron's `dialog.showOpenDialog` and `dialog.showSaveDialog` calls. This completely eliminates UI freezing and deadlocking issues when picking a custom browser executable or importing files on certain Windows builds.
+- **Favorites Corruption Crash:** Bulletproofed the Favorites routing engine with strict `Array.isArray()` validation checks. If a user's `user-preferences.json` file becomes corrupted and saves as an object instead of an array, the browser will gracefully reset it instead of instantly crashing the UI loop.
+
 ## [1.3.11] - 2026-05-14
 
 ### Summary
