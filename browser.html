@@ -230,8 +230,19 @@
             if (webview) webview.setZoomFactor(webview.getZoomFactor() - 0.2);
         });
 
-        addControlBtn('🔳️', 'FullScreen', toggleFullscreen);
-        addControlBtn('⚙️', 'Settings', () => document.getElementById('overlay').style.display = 'block');
+        addControlBtn('🤖', 'Open Botfather Dashboard', async () => {
+            // Ping Botfather first so user gets a clear error if it's not running
+            let alive = false;
+            try { alive = await ipcRenderer.invoke('botfather-ping'); } catch(e) {}
+            if (alive) {
+                ipcRenderer.send('open-botfather-tab');
+            } else {
+                alert('\u26a0\ufe0f Botfather is not running on localhost:8025.\n\nPlease start TheNEATBotfather service first.');
+            }
+        });
+
+        addControlBtn('🔳', 'FullScreen', toggleFullscreen);
+        addControlBtn('\u2699\ufe0f', 'Settings', () => document.getElementById('overlay').style.display = 'block');
 
         // 4. THE HYBRID ROUTER
         const args = remote.process.argv;
@@ -453,7 +464,7 @@
             // 1. Injects the required Registry Keys so Windows knows this app is a browser
             remote.app.setAsDefaultProtocolClient('http');
             
-            // 2. Safely open the Default Apps menu for Windows users
+            // 2. Safely open the Default Apps settings for each platform
             if (process.platform === 'win32') {
                 remote.shell.openExternal('ms-settings:defaultapps');
             } else if (process.platform === 'darwin') {
@@ -462,6 +473,18 @@
                     type: 'info',
                     title: 'Mac OS',
                     message: 'Please go to System Preferences > General to change your default browser.'
+                });
+            } else if (process.platform === 'linux') {
+                // Linux: use xdg-settings to set the default browser
+                const { execFile } = require('child_process');
+                execFile('xdg-settings', ['set', 'default-web-browser', 'neatflashbrowser.desktop'], (err) => {
+                    if (err) {
+                        remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+                            type: 'info',
+                            title: 'Linux Default Browser',
+                            message: 'To set Neat Flash Browser as default, run this command in your terminal:\n\nxdg-settings set default-web-browser neatflashbrowser.desktop'
+                        });
+                    }
                 });
             }
         };
@@ -547,6 +570,7 @@
             const browsers = [];
             const isWin = process.platform === 'win32';
             const isMac = process.platform === 'darwin';
+            const isLinux = process.platform === 'linux';
 
             if (isWin) {
                 // THE FIX: Explicitly grab the 64-bit Program Files directory to bypass Windows 32-bit redirection!
@@ -588,6 +612,43 @@
                         browsers.push({ name: name, path: p });
                     }
                 }
+            } else if (isLinux) {
+                // Linux: check common binary locations in PATH-like directories
+                const { execFileSync } = require('child_process');
+                const linuxBrowsers = [
+                    { name: 'Google Chrome', bins: ['google-chrome', 'google-chrome-stable'] },
+                    { name: 'Chromium',      bins: ['chromium', 'chromium-browser'] },
+                    { name: 'Mozilla Firefox', bins: ['firefox'] },
+                    { name: 'Brave Browser', bins: ['brave-browser', 'brave'] },
+                    { name: 'Microsoft Edge', bins: ['microsoft-edge', 'microsoft-edge-stable'] },
+                ];
+                const searchDirs = ['/usr/bin', '/usr/local/bin', '/snap/bin', '/opt/google/chrome'];
+
+                for (const b of linuxBrowsers) {
+                    let found = null;
+                    outer: for (const dir of searchDirs) {
+                        for (const bin of b.bins) {
+                            const p = dir + '/' + bin;
+                            if (fs.existsSync(p)) { found = p; break outer; }
+                        }
+                    }
+                    // Also try `which` as a fallback
+                    if (!found) {
+                        for (const bin of b.bins) {
+                            try {
+                                const result = execFileSync('which', [bin], { encoding: 'utf8' }).trim();
+                                if (result) { found = result; break; }
+                            } catch(e) {}
+                        }
+                    }
+                    if (found) browsers.push({ name: b.name, path: found });
+                }
+
+                // Always offer xdg-open as a safe fallback on Linux
+                try {
+                    const xdg = execFileSync('which', ['xdg-open'], { encoding: 'utf8' }).trim();
+                    if (xdg) browsers.push({ name: 'System Default (xdg-open)', path: xdg });
+                } catch(e) {}
             }
             return browsers;
         }
