@@ -3,6 +3,17 @@ The Ultimate Flash Browser engineered exclusively for The NEAT Botfather.
 
 Neat Flash Browser is a custom-built, ultra-lightweight web browser designed to do one thing perfectly: play Games exactly like it's 2015. By stripping out modern commercial bloat and integrating directly with Botfather, it delivers maximum speed, automated account management, and a hardened security shield for legacy Flash content.
 
+🆕 What's New
+🔌 Manual Proxy List: Add, edit, or import your own proxies from a proxylist.txt file alongside whatever Botfather already provides, right from the Settings menu.
+
+🏠 Offline Home Page: The default start tab is now generated from this README and the latest GitHub Releases, so it works without ever leaving the sandboxed browser.
+
+⌨️ Address Bar Autofill: Typing a server code like ss78. now offers an inline .evony.com completion, just like a normal browser's address bar.
+
+🔄 Smarter Update Check: "Check for updates" now checks GitHub directly in the background instead of always opening an external browser just to look.
+
+See CHANGELOG.md for the full release history.
+
 🚀 Core Features
 🤖 Seamless Botfather Integration: Click "Login via Web Browser" in Botfather, and Neat Flash instantly catches the handoff. Built-in Single Instance Locking ensures multiple accounts open flawlessly as new tabs in a single, organized window.
 
