@@ -76,6 +76,19 @@
         }
       ]
     },
+    "linux": {
+      "executableName": "NeatFlashBrowser",
+      "category": "Network",
+      "target": [
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "neatflashbrowser-linux-${arch}.${ext}"
+    },
     "nsis": {
       "include": "installer.nsh",
       "menuCategory": "NeatFlashBrowser",
