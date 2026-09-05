@@ -11,7 +11,7 @@ ecosystem usable on Linux, since Botfather itself is a Windows-only WinForms app
 playing the Flash-era game client alive after Flash's EOL, while Botfather drives account logins
 into it via a URL-handoff protocol (see "The Botfather handoff" below). Read `README.md` and
 `SECURITY.md` before making changes — the whole app is designed around a single premise: this is a
-sandboxed, single-purpose container for `http://*.evony.com` (and `localhost` Botfather dashboards)
+sandboxed, single-purpose container for `http://*.somegamewithcastles.com` (and `localhost` Botfather dashboards)
 that aggressively ejects anything else (`https://` links) out to the user's real OS browser, because
 Electron 9 / Flash are both unpatched and unpatchable.
 
@@ -136,7 +136,7 @@ IPC channel map (main ⇄ renderer):
 
 ### The HTTPS Bouncer / "Smart Escape Pod"
 Security boundary, not a convenience feature — don't loosen it without understanding why it exists
-(this container is deliberately sealed to `http://*.evony.com`-style traffic only, since Electron
+(this container is deliberately sealed to `http://*.somegamewithcastles.com`-style traffic only, since Electron
 9/Flash are both EOL). `contents.on('will-navigate' | 'will-redirect' | 'new-window', ...)` on every
 `web-contents-created` intercepts any `https://` URL and hands it to `exports.openSecureUrl()`,
 which spawns the user's configured external browser binary (`store.get('secureBrowserPath')`)
@@ -165,7 +165,7 @@ bubble up and close it):
 - Favorites: import/export as JSON, inline rename, `[Server] Name`-pattern auto-grouping into
   collapsible folders.
 - "Check for updates" button (see `checkForUpdate()` above).
-- Address bar: typing a server code (`ss78.` or `78.`) offers an inline `.evony.com` completion
+- Address bar: typing a server code (`ss78.` or `78.`) offers an inline game-server-domain completion
   (left selected, so continued typing just replaces it) — implemented via `document`-level `input`
   event delegation, since `electron-navigation` creates the actual `#nav-ctrls-url` input, not us.
   Appending the suggestion via `.value` doesn't fire a native `input` event on its own, so a

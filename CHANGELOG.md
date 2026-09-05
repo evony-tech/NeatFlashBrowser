@@ -1,7 +1,7 @@
 Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
-## [1.6.0] - 2026-09-05
+## [1.5.3] - 2026-09-05
 
 ### Summary
 This update rounds out proxy support with full manual editing, makes the default start tab work offline, and smooths out two rough edges in the address bar and Settings menu.
@@ -9,12 +9,13 @@ This update rounds out proxy support with full manual editing, makes the default
 ### Added
 - **Manual Proxy List:** The Proxy dropdown in Settings now merges Botfather's own proxy list with a separately managed list you control directly — add one by typing `host:port`, edit or remove existing entries inline, or import a whole `proxylist.txt` (one `host:port` per line) in one go.
 - **Offline Home Page:** The default tab (opened when the browser isn't launched via a Botfather handoff) is now a generated page built from this repo's README and its latest GitHub Releases, instead of pointing out to neato3.com — since the browser can't navigate to its own `https://` GitHub page itself without the HTTPS Bouncer kicking it back out.
-- **Address Bar Server Autofill:** Typing a server code like `ss78.` or `78.` in the address bar now offers an inline `.evony.com` completion, the same way a normal browser omnibox completes a bare hostname.
+- **Address Bar Server Autofill:** Typing a server code like `ss78.` or `78.` in the address bar now offers an inline game-server completion, the same way a normal browser omnibox completes a bare hostname.
 - **Smarter Update Check:** "Check for updates" now queries GitHub's release API directly in the background instead of always bouncing out to an external browser just to find out if there's something new — you only leave the app if you choose to open the release page.
 
 ### Fixed
 - **Settings Menu:** Clicking outside the Settings panel now closes it, instead of requiring the explicit Close button.
 - **Raw Data Contrast:** Raw JSON/XML/plain-text pages now use a light background instead of a forced dark one — Chromium's built-in viewer applies its own syntax-highlight colors tuned for a light background, so the previous dark override was low-contrast.
+- **Address Bar Display:** The offline home tab now shows as `home.html` in the address bar instead of its full local disk path.
 
 ## [1.4.1] - 2026-05-19
 

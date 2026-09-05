@@ -225,6 +225,20 @@
             return originalNewTab.call(this, url, options);
         };
 
+        // Show the generated home tab as "home.html" instead of its full
+        // file:// disk path. electron-navigation sets the address bar via
+        // `_updateUrl()` (a direct .value assignment, not user typing) on
+        // every tab switch/navigation, so patch that the same way newTab is
+        // patched above rather than trying to intercept every caller.
+        const originalUpdateUrl = enav._updateUrl;
+        enav._updateUrl = function (url) {
+            originalUpdateUrl.call(this, url);
+            const urlInput = document.getElementById('nav-ctrls-url');
+            if (urlInput && /^file:.*\/home\.html$/i.test(urlInput.value)) {
+                urlInput.value = 'home.html';
+            }
+        };
+
         // 3. CREATE BUTTONS (They appear AFTER the address bar on the right)
         addControlBtn('🏠', 'Set as Homepage', () => {
             let url = document.getElementById('nav-ctrls-url').value;

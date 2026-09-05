@@ -8,7 +8,7 @@ Neat Flash Browser is a custom-built, ultra-lightweight web browser designed to 
 
 🏠 Offline Home Page: The default start tab is now generated from this README and the latest GitHub Releases, so it works without ever leaving the sandboxed browser.
 
-⌨️ Address Bar Autofill: Typing a server code like ss78. now offers an inline .evony.com completion, just like a normal browser's address bar.
+⌨️ Address Bar Autofill: Typing a server code like ss78. now offers an inline game server completion, just like a normal browser's address bar.
 
 🔄 Smarter Update Check: "Check for updates" now checks GitHub directly in the background instead of always opening an external browser just to look.
 
@@ -19,7 +19,7 @@ See CHANGELOG.md for the full release history.
 
 🛡️ The "HTTPS Bouncer": Flash Player is a legacy engine. To keep you safe, Neat Flash features a rigid security bouncer. It intercepts any external HTTPS links or sneaky redirects, freezes them, and instantly kicks them out to your secure, default Windows browser (Chrome, Edge, etc.). Your Game container stays 100% sealed.
 
-📁 Smart Account Organization: Running 50 accounts? The browser automatically parses Botfather's URL tags (e.g., [SS123] TECH) and organizes your lords into sleek, collapsible dark-mode server folders.
+📁 Smart Account Organization: Running 50 accounts? The browser automatically parses Botfather's URL tags (e.g., [SS123] THOR) and organizes your lords into sleek, collapsible dark-mode server folders.
 
 🌐 Native OS Integration: With one click in the Settings menu, Neat Flash securely registers itself with Windows 10/11 as your default HTTP handler, while leaving your HTTPS web traffic completely untouched.
 
