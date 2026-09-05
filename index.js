@@ -189,6 +189,45 @@ app.on('ready',   () => {
 		}
 	});
 
+	// --- NEAT FLASH BROWSER: BOTFATHER INTEGRATION ---
+	// Open the Botfather dashboard (localhost:8025) in a new tab
+	ipcMain.on('open-botfather-tab', () => {
+		if (mainWindow) {
+			mainWindow.webContents.send('open-new-tab', {
+				url: encodeURIComponent('http://localhost:8025/'),
+				title: encodeURIComponent('🤖 Botfather Dashboard'),
+				isBotfather: false
+			});
+		}
+	});
+
+	// Open a specific Flash game URL in a new tab (called by the Botfather web UI)
+	ipcMain.on('open-flash-tab', (event, data) => {
+		if (mainWindow) {
+			let url = (data && data.url) ? data.url : null;
+			let title = (data && data.title) ? data.title : 'Game';
+			if (url && url.startsWith('http://')) {
+				mainWindow.webContents.send('open-new-tab', {
+					url: encodeURIComponent(url),
+					title: encodeURIComponent(title),
+					isBotfather: true
+				});
+			}
+		}
+	});
+
+	// Renderer asks if Botfather is alive — reply with status
+	ipcMain.handle('botfather-ping', async () => {
+		const http = require('http');
+		return new Promise((resolve) => {
+			const req = http.get('http://localhost:8025/', (res) => {
+				resolve(res.statusCode < 500);
+			});
+			req.on('error', () => resolve(false));
+			req.setTimeout(1500, () => { req.abort(); resolve(false); });
+		});
+	});
+
 	// Catch F11 and Escape cleanly across all tabs (even when clicked inside the game)
 	app.on('web-contents-created', (event, contents) => {
 		contents.on('before-input-event', (e, input) => {
@@ -275,7 +314,27 @@ app.on('ready',   () => {
 	});
 	
     sendWindow("version", app.getVersion());
-    
+
+	// --- BOTFATHER AUTO-PROBE ---
+	// If Botfather is already running on :8025, auto-open its tab on startup
+	// (only when no --url was passed so we don't override a game link launch)
+	if (safeUrl === 'none') {
+		const http = require('http');
+		setTimeout(() => {
+			const probe = http.get('http://localhost:8025/', (res) => {
+				if (res.statusCode < 500 && mainWindow && !mainWindow.isDestroyed()) {
+					mainWindow.webContents.send('open-new-tab', {
+						url: encodeURIComponent('http://localhost:8025/'),
+						title: encodeURIComponent('🤖 Botfather Dashboard'),
+						isBotfather: false
+					});
+				}
+			});
+			probe.on('error', () => {}); // Botfather not running — silent no-op
+			probe.setTimeout(1500, () => { probe.abort(); });
+		}, 1200); // Wait for renderer to be ready
+	}
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
