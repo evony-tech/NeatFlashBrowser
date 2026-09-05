@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Neat Flash Browser</title>
+<style>
+    body { margin: 0; padding: 40px 60px 80px; background: #161b22; color: #c9d1d9; font-family: -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 32px; margin-bottom: 4px; }
+    h2 { margin-top: 40px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+    h3 { color: #e6edf3; }
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .tagline { color: #8b949e; font-size: 16px; margin-top: 0; }
+    .feature { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+    .warning { color: #f85149; font-weight: bold; }
+    pre { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; overflow-x: auto; }
+    code { font-family: Consolas, monospace; }
+    .release { background: #21262d; border: 1px solid #30363d; border-radius: 6px; padding: 16px 20px; margin: 16px 0; }
+    .release h3 { margin-bottom: 2px; }
+    .release .tag { color: #8b949e; font-weight: normal; font-size: 13px; }
+    .release-date { color: #8b949e; font-size: 13px; margin-bottom: 10px; }
+    .release-body :first-child { margin-top: 0; }
+    .release-link { display: inline-block; margin-top: 6px; font-size: 13px; }
+    footer { margin-top: 60px; color: #8b949e; font-size: 12px; border-top: 1px solid #30363d; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>👑 Neat Flash Browser</h1>
+<p class="tagline">The Ultimate Flash Browser engineered exclusively for The NEAT Botfather.</p>
+<p>Neat Flash Browser is a custom-built, ultra-lightweight web browser designed to do one thing perfectly: play Games exactly like it's 2015. By stripping out modern commercial bloat and integrating directly with Botfather, it delivers maximum speed, automated account management, and a hardened security shield for legacy Flash content.</p>
+<h2>🚀 Core Features</h2>
+<div class="feature"><strong>🤖 Seamless Botfather Integration:</strong> Click "Login via Web Browser" in Botfather, and Neat Flash instantly catches the handoff. Built-in Single Instance Locking ensures multiple accounts open flawlessly as new tabs in a single, organized window.</div>
+<div class="feature"><strong>🛡️ The "HTTPS Bouncer":</strong> Flash Player is a legacy engine. To keep you safe, Neat Flash features a rigid security bouncer. It intercepts any external HTTPS links or sneaky redirects, freezes them, and instantly kicks them out to your secure, default Windows browser (Chrome, Edge, etc.). Your Game container stays 100% sealed.</div>
+<div class="feature"><strong>📁 Smart Account Organization:</strong> Running 50 accounts? The browser automatically parses Botfather's URL tags (e.g., [SS123] TECH) and organizes your lords into sleek, collapsible dark-mode server folders.</div>
+<div class="feature"><strong>🌐 Native OS Integration:</strong> With one click in the Settings menu, Neat Flash securely registers itself with Windows 10/11 as your default HTTP handler, while leaving your HTTPS web traffic completely untouched.</div>
+<h2>⚠️ Security Notice &amp; Architecture</h2>
+<p>The Candid Truth: This application relies on Electron 9.4.4 and Adobe Flash Player (PPAPI), both of which are End-of-Life (EOL) and no longer receive security patches.</p>
+<p>How we mitigate this: We engineered the HTTPS Bouncer specifically for this reason. Neat Flash Browser is designed to be an isolated container strictly for http://*.somegamewithcastles.com.</p>
+<p class="warning">DO NOT use this browser for banking, email, or social media.</p>
+<p class="warning">DO NOT enter personal passwords into this browser.</p>
+<p>If you navigate outside of the game, the browser will aggressively attempt to route that traffic to your standard, updated OS browser.</p>
+<p>For maximum security, we still highly recommend running Botfather and Neat Flash Browser inside a dedicated Virtual Machine (VM) or isolated VPS.</p>
+<h2>🛠️ Developer Setup &amp; Compilation</h2>
+<p>Want to build Neat Flash Browser from the source?</p>
+<h3>Prerequisites</h3>
+<p>Node.js (v12.14.0 to v15.x highly recommended for Electron 9 compatibility)</p>
+<p>Flash Player Plugin: Due to licensing, the native Flash .dll is not included in the source code. You must place pepflashplayer64.dll (or pepflashplayer32.dll for 32-bit systems) into a folder named flashver/ in the root directory before compiling.</p>
+<h3>Build Instructions</h3>
+<p>Clone the repository and open your terminal.</p>
+<h3>Install the legacy dependencies:</h3>
+<pre><code>npm install --legacy-peer-deps</code></pre>
+<h3>Run the development build to test:</h3>
+<pre><code>npm run start</code></pre>
+<p>Compile the Windows Installer (automatically handles ASAR unpacking for the Flash plugin and writes the Master Browser Registry keys):</p>
+<pre><code>npm run build</code></pre>
+<p>Your compiled NeatFlashBrowser-Setup.exe will be waiting in the dist/ folder.</p>
+<h2>📥 Downloads &amp; Installation</h2>
+<p>Ready to play? You don't need to compile it yourself. Download the latest pre-packaged installer directly from our website:</p>
+<p>👉 Download Neat Flash Browser <a href="https://neato3.com/neatflashbrowser/">https://neato3.com/neatflashbrowser/</a></p>
+<h3>System Requirements:</h3>
+<p>Windows 10 or Windows 11 (64-bit)</p>
+<p>The NEAT Botfather (v1.9.5.5 or later for automated URL injection)</p>
+<p>Engineered by Evony-Tech for the Neato3 Community.</p>
+
+<h2>Latest Releases</h2>
+<div class="release">
+    <h3>v1.5.0 - Linux support <span class="tag">v1.5.0</span></h3>
+    <div class="release-date">August 23, 2026</div>
+    <div class="release-body"><p>Adds Linux support: native Electron build with proper GPU/software-rendering fallback, PPAPI Flash via libpepflashplayer.so, --no-sandbox handling, and xdg default-browser/scheme-handler integration.</p>
+<p>New IPC bridge with TheNEATBotfather&#39;s web dashboard (open-botfather-tab, open-flash-tab, botfather-ping) so the dashboard can hand off game logins into a tab here.</p>
+<p><strong>Asset</strong>: neatflashbrowser-linux-x64.tar.gz — extract and run ./NeatFlashBrowser --no-sandbox</p>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/v1.5.0">View on GitHub</a>
+</div>
+<div class="release">
+    <h3>NeatFlashBrowser-v1.4.3 <span class="tag">1.4.3</span></h3>
+    <div class="release-date">June 17, 2026</div>
+    <div class="release-body"><h2 id="whats-new-in-this-release">What&#39;s New in This Release</h2>
+<h3 id="🌙-universal-dark-mode-for-raw-data">🌙 Universal Dark Mode for Raw Data</h3>
+<p>We have completely overhauled how the Neat Flash Browser handles raw data, API responses, and logs to better match the application&#39;s premium dark-mode aesthetic.</p>
+<ul>
+<li><strong>Smart MIME-Type Detection:</strong> The browser no longer relies on fragile <code>.xml</code> or <code>.txt</code> URL extensions to apply custom styling. It now intelligently reads the underlying HTTP <code>Content-Type</code> headers. This guarantees that extension-less API endpoints (like Botfather&#39;s local JSON stats) are perfectly detected and styled.</li>
+<li><strong>Crisp Dark Theme:</strong> Raw JSON, XML, and plain text files will no longer render as unreadable ninja-text or blindingly white pages. They now automatically render with a sleek dark grey background (<code>#1e1e1e</code>) and crisp white text.</li>
+<li><strong>Auto Word-Wrapping:</strong> Added automatic word-wrapping to the raw data viewer. Massive, unformatted JSON payloads will now neatly wrap to your window size, completely eliminating the need for endless horizontal scrolling.</li>
+</ul>
+<h3 id="🔧-failsafes--improvements">🔧 Failsafes &amp; Improvements</h3>
+<ul>
+<li>Fixed an issue where dynamically generated pages (like <code>data:</code> URIs or local <code>localhost</code> API endpoints) could fail to trigger the custom CSS injectors.</li>
+</ul>
+<hr>
+<p><strong>Installation:</strong>
+Simply download the <code>NeatFlashBrowser-Setup.exe</code> below and run the installer. It will automatically overwrite your previous version while preserving your saved favorites and custom secure browser paths!</p>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.4.3">View on GitHub</a>
+</div>
+<div class="release">
+    <h3>Neat Flash Browser v1.4.1 - Import/export favorites update <span class="tag">1.4.1</span></h3>
+    <div class="release-date">May 19, 2026</div>
+    <div class="release-body"><h2 id="141---2026-05-19">[1.4.1] - 2026-05-19</h2>
+<h3 id="summary">Summary</h3>
+<p>This update brings robust Import/Export tools for Favorites, a specialized XML reading theme, and crucial bug fixes for Electron IPC deadlocks and 64-bit Windows environment pathing.</p>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Import &amp; Export Favorites:</strong> Added side-by-side Export and Import buttons in the Settings overlay. Users can now easily backup their dashboards to a JSON file or migrate them to a new PC. The importer features smart-merging to automatically prevent exact URL duplicates.</li>
+<li><strong>XML Readability Theme:</strong> The browser now actively listens for <code>.xml</code> file extensions (like Evony battle reports) and dynamically injects a custom <code>rgb(194, 139, 86)</code> background color. This ensures raw black text is perfectly readable without sacrificing the browser&#39;s global dark theme for other dashboards.</li>
+<li><strong>Brave Browser Support:</strong> Added Brave Browser to the HTTPS secure browser auto-detection list.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>64-Bit Browser Auto-Detection:</strong> Bypassed Windows 32-bit folder redirection (where the 32-bit Flash browser was being lied to by the OS and redirected to <code>Program Files (x86)</code>). By explicitly querying the <code>ProgramW6432</code> environment variable, the Settings menu can now successfully detect 64-bit installations of Chrome, Edge, and Firefox.</li>
+<li><strong>File Picker IPC Deadlock:</strong> Removed the parent window binding (<code>remote.getCurrentWindow()</code>) from Electron&#39;s <code>dialog.showOpenDialog</code> and <code>dialog.showSaveDialog</code> calls. This completely eliminates UI freezing and deadlocking issues when picking a custom browser executable or importing files on certain Windows builds.</li>
+<li><strong>Favorites Corruption Crash:</strong> Bulletproofed the Favorites routing engine with strict <code>Array.isArray()</code> validation checks. If a user&#39;s <code>user-preferences.json</code> file becomes corrupted and saves as an object instead of an array, the browser will gracefully reset it instead of instantly crashing the UI loop.</li>
+</ul>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.4.1">View on GitHub</a>
+</div>
+<div class="release">
+    <h3>Neat Flash Browser v1.3.11 - The Copy Paste Update <span class="tag">1.3.11</span></h3>
+    <div class="release-date">May 14, 2026</div>
+    <div class="release-body"><h2 id="1311---2026-05-14">[1.3.11] - 2026-05-14</h2>
+<h3 id="summary">Summary</h3>
+<p>This update restores essential right-click functionality inside the browser tabs, giving users back their native copy, cut, and paste controls that were previously blocked by the sandboxed webviews.</p>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Smart Context Menu:</strong> Implemented a native right-click menu across all active browser tabs. The menu is dynamically context-aware:<ul>
+<li>Displays <strong>Copy</strong> only when text is actively highlighted.</li>
+<li>Displays <strong>Cut</strong> and <strong>Paste</strong> only when clicking inside an editable text field (e.g., login screens, chat boxes, or forms).</li>
+<li>Always provides a <strong>Select All</strong> option for quick data highlighting.</li>
+</ul>
+</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>Right-Click Swallowing:</strong> Bypassed a core Chromium sandboxing limitation where the inner <code>&lt;webview&gt;</code> tags were completely ignoring right-click events, preventing users from easily copying data or pasting complex passwords into the Evony client or Botfather dashboards.</li>
+</ul>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.3.11">View on GitHub</a>
+</div>
+<div class="release">
+    <h3>Neat Flash Browser v1.3.9 - The Smart Router Update <span class="tag">1.3.9</span></h3>
+    <div class="release-date">May 14, 2026</div>
+    <div class="release-body"><h2 id="139---2026-05-14">[1.3.9] - 2026-05-14</h2>
+<h3 id="summary">Summary</h3>
+<p>This update introduces the Smart Auto-Detect Engine for the HTTPS Bouncer, allowing the browser to automatically scan your OS for installed external browsers. It also brings massive quality-of-life upgrades to the Favorites system and seals two navigation bypass leaks.</p>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>Smart Browser Auto-Detection:</strong> The Settings menu now automatically scans Windows and macOS for installed secure browsers (Google Chrome, Microsoft Edge, Mozilla Firefox, and Safari) and populates them into an easy-to-use dropdown menu.</li>
+<li><strong>Custom Executable Picker:</strong> Added a native OS file picker fallback for users who install their secure browsers in non-standard directories.</li>
+<li><strong>Inline Favorite Editing &amp; Auto-Folders:</strong> You can now rename favorites directly in the dropdown menu. Renaming a favorite using the <code>[Server] Name</code> format (e.g., <code>[SS82] Farm</code>) will dynamically generate a clean, collapsible folder for that server and group the accounts inside it.</li>
+<li><strong>Update Link:</strong> Added a direct &quot;Check for updates on GitHub&quot; link in the Settings menu that safely routes through the Escape Pod.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>Native OS Warnings:</strong> When an HTTPS link is blocked and no secure browser is configured, the browser no longer attempts to render an HTML error page. It now triggers a clean, Native OS Warning Dialog that pauses the application and explains how to configure the settings.</li>
+<li><strong>Default Browser Assignment:</strong> Clicking &quot;Set default browser&quot; now automatically opens the native Windows <code>ms-settings:defaultapps</code> page, making it much easier for users to assign the browser at the OS level.</li>
+<li><strong>UI Polish:</strong> Stripped out the bulky, light-grey Chromium scrollbars from the Settings overlay and Favorites menu. The menus remain fully scrollable via mouse wheel but look much cleaner in dark mode.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>Address Bar Leak:</strong> Fixed a vulnerability where manually typing an <code>https://</code> link directly into the address bar would bypass the outer window&#39;s Bouncer. The Bouncer now actively monitors the inner <code>&lt;webview&gt;</code> tag&#39;s <code>will-navigate</code> events.</li>
+<li><strong>Data URI Glitch:</strong> Fixed an issue where the legacy <code>electron-navigation</code> library would mistakenly send internal <code>data:</code> URIs to Google Search instead of rendering them.</li>
+</ul>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.3.9">View on GitHub</a>
+</div>
+<footer>
+    NeatFlashBrowser v1.4.3 &middot; generated 9/5/2026, 1:19:19 PM by <code>npm run build-home</code> from README.md and the GitHub Releases API. This page is static -- rerun the script to refresh it.
+</footer>
+</div>
+</body>
+</html>

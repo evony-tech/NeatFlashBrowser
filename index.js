@@ -250,6 +250,7 @@ app.on('ready',   () => {
         }
     });
 
+    applyProxyToSession(store.get('selectedProxy') || '');
     mainWindow.loadURL(`file://${__dirname}/browser.html`);
 
 
@@ -383,10 +384,35 @@ app.on('open-file', (event, path) =>
 
 
 exports.sethome = (a) => homeSetter(a);
-	
+
 function homeSetter(a){
      store.set('homepage', a );
 	 console.log("Favorite url:" + a);
+};
+
+// ==========================================
+// --- NEAT FLASH BROWSER: PROXY SUPPORT ---
+// ==========================================
+// Applies (or clears) an HTTP proxy on the main window's session. NOTE: this
+// only affects Chromium's own networking (page loads, images, XHR, etc.) --
+// it does NOT reach the PPAPI Flash plugin's raw Socket connections, which
+// implement their own networking outside Chromium's session/proxy layer.
+// Confirmed 2026-08-20: a game session logged in successfully through this
+// browser with a proxy set this way, but the actual game-server socket
+// connection never appeared on a packet capture of that proxy -- it went out
+// directly. Routing the game socket itself through a proxy needs a different,
+// OS-level mechanism (not yet implemented here).
+exports.applyProxy = (address) => applyProxyToSession(address);
+
+async function applyProxyToSession(address) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const rules = address && address.trim() ? address.trim() : 'direct://';
+    try {
+        await mainWindow.webContents.session.setProxy({ proxyRules: rules });
+        console.log(`Proxy ${rules === 'direct://' ? 'cleared (direct connection)' : 'set to ' + rules}`);
+    } catch (err) {
+        console.error('Failed to apply proxy:', err);
+    }
 };
 
 // ==========================================
@@ -540,10 +566,42 @@ exports.openSecureUrl = (url) => {
     } else {
         // Safe HTTP Link (e.g. localhost Botfather dashboard) opens normally inside Flash Browser
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('open-new-tab', { 
-                url: encodeURIComponent(targetUrl), 
-                title: encodeURIComponent('External Link') 
+            mainWindow.webContents.send('open-new-tab', {
+                url: encodeURIComponent(targetUrl),
+                title: encodeURIComponent('External Link')
             });
         }
     }
 };
+
+// ==========================================
+// --- NEAT FLASH BROWSER: UPDATE CHECK ---
+// ==========================================
+// A plain background request straight to GitHub's release API from the main
+// process -- NOT a webContents navigation -- so "Check for updates" doesn't
+// get caught by the HTTPS Bouncer above and doesn't need a secure browser
+// configured just to find out whether there's something new.
+exports.checkForUpdate = () => new Promise((resolve) => {
+    const https = require('https');
+    const req = https.get('https://api.github.com/repos/evony-tech/NeatFlashBrowser/releases/latest', {
+        headers: { 'User-Agent': 'NeatFlashBrowser', 'Accept': 'application/vnd.github+json' }
+    }, (res) => {
+        if (res.statusCode !== 200) {
+            res.resume();
+            resolve({ ok: false });
+            return;
+        }
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                const release = JSON.parse(data);
+                resolve({ ok: true, latest: release.tag_name, url: release.html_url });
+            } catch (err) {
+                resolve({ ok: false });
+            }
+        });
+    });
+    req.on('error', () => resolve({ ok: false }));
+    req.setTimeout(8000, () => { req.destroy(); resolve({ ok: false }); });
+});

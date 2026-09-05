@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "electron .",
+    "build-home": "node scripts/build-home.js",
     "publish": "electron-builder --win -p always",
     "build": "electron-builder --win",
     "build1": "electron-packager . FlashBrowser --platform=darwin --overwrite --icon=icon.icns",
@@ -24,14 +25,16 @@
   "devDependencies": {
     "electron": "^9.4.4",
     "electron-builder": "^22.14.13",
-    "electron-packager": "^15.5.2"
+    "electron-packager": "^15.5.2",
+    "marked": "^4.3.0"
   },
   "dependencies": {
     "electron-context-menu": "^3.6.1",
     "electron-find": "^1.0.7",
     "electron-navigation": "^6.6.6",
     "electron-version": "^2.0.1",
-    "resolve-dependencies": "^6.0.9"
+    "resolve-dependencies": "^6.0.9",
+    "sql.js": "^1.8.0"
   },
   "repository": {
     "type": "git",

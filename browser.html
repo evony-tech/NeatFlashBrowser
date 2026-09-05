@@ -42,9 +42,9 @@
         <embed id="FlashTab3" src="about:blank#404" width="320" height="200"></embed>
     </div>
 
-    <div id="overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; background-color: rgba(0,0,0,0.8);">
-        
-        <div style="background-color: #2b2b2b; padding: 30px; border-radius: 10px; width: 400px; color: white; font-family: sans-serif; box-shadow: 0px 0px 20px black; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 80vh; overflow-y: auto;">
+    <div id="overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; background-color: rgba(0,0,0,0.8);" onclick="document.getElementById('overlay').style.display='none'">
+
+        <div onclick="event.stopPropagation()" style="background-color: #2b2b2b; padding: 30px; border-radius: 10px; width: 400px; color: white; font-family: sans-serif; box-shadow: 0px 0px 20px black; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 80vh; overflow-y: auto;">
             
             <h2 style="margin-top: 0; text-align: center;">⚙️ Settings & Favorites</h2>
             <hr style="border: 1px solid #444; margin-bottom: 20px;">
@@ -57,6 +57,23 @@
                         <option value="custom">📁 Browse for Custom Executable...</option>
                     </select>
                 </div>
+            </div>
+            <div style="margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 15px;">
+                <label style="color: #c9d1d9; font-weight: bold; font-size: 14px;">Proxy:</label>
+                <div style="margin-top: 8px;">
+                    <select id="proxy-dropdown" style="width: 100%; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; border-radius: 4px; outline: none; font-size: 13px;">
+                        <option value="">-- No Proxy (Direct) --</option>
+                    </select>
+                </div>
+                <div style="color: #888; font-size: 11px; margin-top: 6px; line-height: 1.4;">
+                    Only routes this browser's own page loads through the proxy -- the game's own socket connection is unaffected.
+                </div>
+                <div id="manual-proxy-list" style="margin-top: 10px;"></div>
+                <div style="display: flex; gap: 6px; margin-top: 8px;">
+                    <input id="manual-proxy-input" type="text" placeholder="host:port" style="flex: 1; min-width: 0; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; border-radius: 4px; outline: none; font-size: 13px;">
+                    <button onclick="addManualProxy()" style="cursor:pointer; font-weight: bold; font-size: 13px; color: white; background: #0275d8; border: none; padding: 8px 12px; border-radius: 4px;">➕ Add</button>
+                </div>
+                <button onclick="importProxyList()" style="cursor:pointer; font-weight: bold; font-size: 13px; color: white; background: #17a2b8; border: none; padding: 8px; width: 100%; margin-top: 8px; border-radius: 4px;">📥 Import proxylist.txt</button>
             </div>
             <button onclick="dispachClearCache()" style="cursor:pointer; font-weight: bold; font-size: 14px; color: white; background: #d9534f; border: none; padding: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;">🗑️ Clear Cache & Restart</button>
         
@@ -169,8 +186,16 @@
                     });
 
                     // ==========================================
-                    // 3. THE FIX: UNIVERSAL DARK MODE FOR RAW DATA
+                    // 3. THE FIX: CONSISTENT READABLE STYLE FOR RAW DATA
                     // Checks the actual MIME type instead of the URL string!
+                    // Uses a light background rather than a forced dark one --
+                    // Chromium's built-in XML viewer applies its own
+                    // syntax-highlight colors (tags, attributes, comments) that
+                    // are tuned for a light background and aren't reachable by
+                    // a simple body/pre color override, so forcing a dark
+                    // background there just produces low-contrast text. A
+                    // light background matches what that colorizer already
+                    // expects, and reads just as well for plain JSON/text.
                     // ==========================================
                     webview.addEventListener('dom-ready', () => {
                         webview.executeJavaScript(`
@@ -178,7 +203,7 @@
                                 const type = document.contentType.toLowerCase();
                                 if (type.includes('json') || type.includes('xml') || type.includes('plain')) {
                                     const style = document.createElement('style');
-                                    style.textContent = 'html, body, pre { background-color: #1e1e1e !important; color: white !important; word-wrap: break-word; }';
+                                    style.textContent = 'html, body, pre { background-color: #fafafa !important; color: #1e1e1e !important; word-wrap: break-word; }';
                                     document.documentElement.appendChild(style);
                                 }
                             })();
@@ -249,7 +274,12 @@
                 saveToFavorites(passedUrl, passedTitle);
             }
         } else {
-            enav.newTab('http://neato3.com/neatflashbrowser', { icon: "clear", title: "Neat Flash Browser" });
+            // Local static page (README + latest GitHub Releases, baked in by
+            // `npm run build-home`) instead of the live neato3.com/GitHub
+            // page -- the browser can't navigate to its own https:// repo
+            // itself, since the HTTPS Bouncer above ejects that navigation
+            // straight back out to the OS browser.
+            enav.newTab(`file://${__dirname}/home.html`, { icon: "clear", title: "Neat Flash Browser" });
         }
 
         // 5. TAB & FAVORITE UTILS
@@ -534,9 +564,42 @@
         const { dialog } = remote;
         const fs = require('fs');
 
-        window.openGitHubLink = (e) => {
+        const RELEASES_URL = "https://github.com/evony-tech/NeatFlashBrowser/releases";
+
+        window.openGitHubLink = async (e) => {
             e.preventDefault();
-            remote.require('./index').openSecureUrl("https://github.com/evony-tech/NeatFlashBrowser/releases");
+            const link = e.target;
+            const originalText = link.textContent;
+            link.textContent = 'Checking...';
+
+            const result = await remote.require('./index').checkForUpdate();
+            link.textContent = originalText;
+
+            if (!result.ok) {
+                // Couldn't reach GitHub's API directly -- fall back to the old
+                // behavior of just opening the releases page.
+                remote.require('./index').openSecureUrl(RELEASES_URL);
+                return;
+            }
+
+            const current = remote.app.getVersion();
+            const latest = (result.latest || '').replace(/^v/, '');
+
+            if (latest && latest !== current) {
+                const choice = remote.dialog.showMessageBoxSync(remote.getCurrentWindow(), {
+                    type: 'info',
+                    title: 'Update Available',
+                    message: `A new version is available: ${result.latest} (you have v${current})`,
+                    buttons: ['Open Release Page', 'Not Now']
+                });
+                if (choice === 0) remote.require('./index').openSecureUrl(result.url || RELEASES_URL);
+            } else {
+                remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+                    type: 'info',
+                    title: 'Up to Date',
+                    message: `You're running the latest version (v${current}).`
+                });
+            }
         };
 
         const browserDropdown = document.getElementById('browser-dropdown');
@@ -653,6 +716,227 @@
             } else {
                 savedBrowserPath = selectedVal;
                 store.set('secureBrowserPath', savedBrowserPath);
+            }
+        });
+
+        // ==========================================
+        // 10. PROXY SELECTION (Botfather's own Proxies table + our own manual list)
+        // ==========================================
+        const proxyDropdown = document.getElementById('proxy-dropdown');
+        let savedProxy = store.get('selectedProxy') || '';
+
+        // Required directly (this window has nodeIntegration: true), not via
+        // remote.require -- Electron 9's legacy remote module doesn't reliably
+        // proxy async/Promise-returning calls across to the main process.
+        const { getProxies } = require('./proxies');
+
+        // "host:port" -- same bare format Botfather's own Proxies table uses.
+        const PROXY_ADDRESS_RE = /^[\w.\-]+:\d{2,5}$/;
+
+        function getManualProxies() {
+            let list = store.get('manualProxies');
+            return Array.isArray(list) ? list : [];
+        }
+
+        function setManualProxies(list) {
+            store.set('manualProxies', list);
+            renderManualProxyList();
+            populateProxyDropdown();
+        }
+
+        async function populateProxyDropdown() {
+            let botfatherProxies = [];
+            try {
+                botfatherProxies = await getProxies();
+            } catch (err) {
+                console.error('Failed to load proxies from Botfather:', err);
+            }
+            const manualProxies = getManualProxies();
+
+            while (proxyDropdown.options.length > 1) proxyDropdown.remove(1);
+
+            // One flat list -- Botfather's proxies (if any were found) plus
+            // whatever the user's added manually. No need to distinguish the
+            // source: if Botfather's list is empty the user just adds their
+            // own, and if it isn't they may not need to add any at all.
+            const addresses = [...botfatherProxies.map(p => p.address), ...manualProxies];
+            addresses.forEach(address => {
+                let opt = document.createElement('option');
+                opt.value = address;
+                opt.text = `🌍 ${address}`;
+                proxyDropdown.add(opt);
+            });
+
+            // If the saved proxy no longer exists in either list (deleted, or
+            // Botfather's DB isn't reachable right now), still show it so the
+            // selection isn't silently lost.
+            if (savedProxy && !Array.from(proxyDropdown.options).some(o => o.value === savedProxy)) {
+                let opt = document.createElement('option');
+                opt.value = savedProxy;
+                opt.text = `🌍 ${savedProxy} (not in the list)`;
+                proxyDropdown.add(opt);
+            }
+
+            proxyDropdown.value = savedProxy;
+        }
+
+        populateProxyDropdown();
+
+        proxyDropdown.addEventListener('change', (e) => {
+            savedProxy = e.target.value;
+            store.set('selectedProxy', savedProxy);
+            remote.require('./index').applyProxy(savedProxy);
+        });
+
+        // --- Manual proxy list: add / inline edit / delete ---
+        function renderManualProxyList() {
+            let container = document.getElementById('manual-proxy-list');
+            container.innerHTML = "";
+            let proxies = getManualProxies();
+
+            proxies.forEach((address, idx) => {
+                let row = document.createElement('div');
+                row.style.cssText = "display:flex; align-items:center; justify-content:space-between; background:#21262d; border:1px solid #30363d; border-radius:4px; padding:6px 8px; margin-bottom:4px; font-size:12px;";
+
+                let text = document.createElement('span');
+                text.textContent = address;
+                text.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;";
+
+                let actions = document.createElement('span');
+                actions.style.cssText = "flex-shrink:0; margin-left: 8px;";
+
+                let editBtn = document.createElement('span');
+                editBtn.innerHTML = "✏️";
+                editBtn.title = "Edit";
+                editBtn.style.cssText = "cursor:pointer; margin-left:8px;";
+
+                let delBtn = document.createElement('span');
+                delBtn.innerHTML = "❌";
+                delBtn.title = "Remove";
+                delBtn.style.cssText = "cursor:pointer; margin-left:8px;";
+
+                editBtn.onclick = () => {
+                    text.style.display = 'none';
+                    actions.style.display = 'none';
+
+                    let input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = address;
+                    input.style.cssText = "flex:1; background:#161b22; color:#c9d1d9; border:1px solid #30363d; padding:2px 5px; outline:none; border-radius:3px; font-size:12px;";
+
+                    let saveBtn = document.createElement('span');
+                    saveBtn.innerHTML = "💾";
+                    saveBtn.style.cssText = "cursor:pointer; margin-left:8px;";
+
+                    let saveAction = () => {
+                        let val = input.value.trim();
+                        if (!PROXY_ADDRESS_RE.test(val)) {
+                            remote.dialog.showMessageBox({ type: 'warning', title: 'Invalid Proxy', message: 'Expected "host:port", e.g. 192.168.1.1:8080.' });
+                            return;
+                        }
+                        let list = getManualProxies();
+                        list[idx] = val;
+                        setManualProxies(list);
+                    };
+                    saveBtn.onclick = saveAction;
+                    input.onkeypress = (ev) => { if (ev.key === 'Enter') saveAction(); };
+
+                    row.insertBefore(input, row.firstChild);
+                    row.appendChild(saveBtn);
+                    input.focus();
+                };
+
+                delBtn.onclick = () => {
+                    let list = getManualProxies();
+                    list.splice(idx, 1);
+                    setManualProxies(list);
+                };
+
+                actions.appendChild(editBtn);
+                actions.appendChild(delBtn);
+                row.appendChild(text);
+                row.appendChild(actions);
+                container.appendChild(row);
+            });
+        }
+
+        window.addManualProxy = () => {
+            let input = document.getElementById('manual-proxy-input');
+            let val = input.value.trim();
+            if (!PROXY_ADDRESS_RE.test(val)) {
+                remote.dialog.showMessageBox({ type: 'warning', title: 'Invalid Proxy', message: 'Expected "host:port", e.g. 192.168.1.1:8080.' });
+                return;
+            }
+            let list = getManualProxies();
+            if (!list.includes(val)) list.push(val);
+            setManualProxies(list);
+            input.value = '';
+        };
+
+        // Reads one proxy per line ("host:port"); blank lines and "#" comments
+        // are skipped, malformed lines are silently dropped rather than
+        // blocking the whole import.
+        window.importProxyList = async () => {
+            const result = await remote.dialog.showOpenDialog({
+                title: 'Import proxylist.txt',
+                properties: ['openFile'],
+                filters: [{ name: 'Text Files', extensions: ['txt'] }, { name: 'All Files', extensions: ['*'] }]
+            });
+
+            if (result.canceled || !result.filePaths.length) return;
+
+            const fs = require('fs');
+            let lines;
+            try {
+                lines = fs.readFileSync(result.filePaths[0], 'utf-8').split(/\r?\n/);
+            } catch (err) {
+                remote.dialog.showMessageBox({ type: 'error', title: 'Import Failed', message: 'Could not read that file: ' + err.message });
+                return;
+            }
+
+            let list = getManualProxies();
+            let addedCount = 0;
+            lines.forEach(line => {
+                let val = line.trim();
+                if (!val || val.startsWith('#')) return;
+                if (PROXY_ADDRESS_RE.test(val) && !list.includes(val)) {
+                    list.push(val);
+                    addedCount++;
+                }
+            });
+
+            setManualProxies(list);
+            remote.dialog.showMessageBox({ type: 'info', title: 'Import Complete', message: `Imported ${addedCount} new prox${addedCount === 1 ? 'y' : 'ies'}.` });
+        };
+
+        renderManualProxyList();
+
+        // ==========================================
+        // 11. ADDRESS BAR: GAME SERVER AUTOFILL
+        // ==========================================
+        // Typing a server code ("ss78." or just "78.") offers an inline
+        // completion of the actual game domain, the same way a normal
+        // browser omnibox completes a bare hostname. electron-navigation
+        // creates the address bar input itself (id="nav-ctrls-url") rather
+        // than us, so this listens via delegation on document instead of
+        // grabbing a direct element reference that may not exist yet.
+        // The suggested part is left selected so continued typing just
+        // replaces it, matching standard address-bar autocomplete behavior.
+        document.addEventListener('input', (e) => {
+            if (!e.target || e.target.id !== 'nav-ctrls-url') return;
+            const input = e.target;
+            if (/^(ss)?\d+\.$/i.test(input.value)) {
+                const start = input.value.length;
+                input.value += 'evony.com';
+                // Setting .value directly doesn't fire a native 'input' event,
+                // so electron-navigation's own address-bar listener (registered
+                // before this one) never sees the appended suggestion and keeps
+                // its last-known value from before the "." keystroke -- Enter
+                // would submit that stale value and need a second press once
+                // the library catches up. Dispatch one so it re-reads the real
+                // value immediately, same tick.
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.setSelectionRange(start, input.value.length);
             }
         });
     </script>
