@@ -64,9 +64,9 @@ Your compiled NeatFlashBrowser-Setup.exe will be waiting in the dist/ folder.
 
 📥 Downloads & Installation
 Ready to play? You don't need to compile it yourself.
-Download the latest pre-packaged installer directly from our website or from the GitHub Releases page:
+All installers are centralized on GitHub Releases — no separate download mirror to keep in sync:
 
-👉 Download Neat Flash Browser https://neato3.com/neatflashbrowser/
+👉 Download Neat Flash Browser https://github.com/evony-tech/NeatFlashBrowser/releases/latest
 
 **Windows (primary platform):** This is where almost everyone runs Neat Flash Browser, since
 Botfather itself is a Windows-only WinForms app. Grab `NeatFlashBrowser-Setup.exe` — it's the
