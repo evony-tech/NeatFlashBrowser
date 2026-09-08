@@ -76,7 +76,20 @@
         }
       ]
     },
-    "linux": {
+    "mac": {
+    "executableName": "NeatFlashBrowser",
+    "category": "public.app-category.utilities",
+    "target": [
+      {
+        "target": "zip",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "neatflashbrowser-mac-${arch}.${ext}"
+  },
+  "linux": {
       "executableName": "NeatFlashBrowser",
       "category": "Network",
       "target": [
