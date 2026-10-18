@@ -68,35 +68,22 @@ All installers are centralized on GitHub Releases — no separate download mirro
 
 👉 Download Neat Flash Browser https://github.com/evony-tech/NeatFlashBrowser/releases/latest
 
-**Windows (primary platform):** This is where almost everyone runs Neat Flash Browser, since
-Botfather itself is a Windows-only WinForms app. Grab `NeatFlashBrowser-Setup.exe` — it's the
-supported, tested path and where most of our own dogfooding happens.
+**Windows only.** Botfather itself is a Windows-only WinForms app, so Windows is where nearly
+everyone runs Neat Flash Browser — and as of v1.5.4 it's the only platform we build and release
+for. Grab `NeatFlashBrowser-Setup.exe`.
 
-**Linux (secondary, supported edge case):** A smaller but real slice of users run Botfather under
-Wine on a Linux VPS specifically to dodge per-seat Windows Server licensing costs. `neatflashbrowser-linux-x64.tar.gz`
-is built and tested for this setup — see the Linux notes elsewhere in this repo for the required
-`--no-sandbox` flag and `xdg-settings` default-browser wiring.
-
-**macOS (untested, community build):** There's no realistic reason to run Botfather on macOS, but
-if you're the kind of person who'd rather run Flash-era games in a native Mac window than fire up a
-Windows/Linux VM, a `neatflashbrowser-mac-x64.zip` build is available on the Releases page. It's
-built from the same `electron-builder` config as the other platforms and includes the macOS Flash
-plugin, but **it has not been run or verified on an actual Mac** — no signing, no notarization, no
-one on the team currently has hardware to test it on. Gatekeeper will refuse to open it until you
-right-click → Open (or run `xattr -cr NeatFlashBrowser.app`) to clear the quarantine flag. Caveat
-emptor: treat it as a "should work in theory" build, not a supported release, and please open an
-issue if you try it and hit problems.
+Linux and macOS builds existed for a while (v1.5.3 shipped both), but have been discontinued:
+Electron 9 — required for the PPAPI Flash plugin this app depends on — no longer runs at all on
+current Linux kernels (crashes immediately on startup with a `futex` error). Since that's the
+underlying runtime on both platforms, there's no viable path to keep shipping Linux or macOS
+builds without a much larger rewrite (a newer Electron means a newer, incompatible Flash plugin
+story). If you're on Linux or macOS, your option is running Botfather + Neat Flash Browser inside
+a Windows VM.
 
 System Requirements:
 
-Windows 10 or Windows 11 (64-bit) — primary, fully supported
+Windows 10 or Windows 11 (64-bit) — only supported platform
 
-Linux x64 — supported for the Wine/VPS-hosted Botfather setup
-
-macOS x64 — unsupported, untested community build; use at your own risk
-
-The NEAT Botfather (v1.9.5.5 or later for automated URL injection) — Windows or Wine-on-Linux only;
-there's no macOS build of Botfather itself, so the Mac browser build only makes sense standalone,
-without the Botfather handoff features
+The NEAT Botfather (v1.9.5.5 or later for automated URL injection)
 
 Engineered by Evony-Tech for the Neato3 Community.

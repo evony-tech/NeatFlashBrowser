@@ -65,14 +65,11 @@
 <h2>📥 Downloads &amp; Installation</h2>
 <p>Ready to play? You don't need to compile it yourself. All installers are centralized on GitHub Releases — no separate download mirror to keep in sync:</p>
 <p>👉 Download Neat Flash Browser <a href="https://github.com/evony-tech/NeatFlashBrowser/releases/latest">https://github.com/evony-tech/NeatFlashBrowser/releases/latest</a></p>
-<p>**Windows (primary platform):** This is where almost everyone runs Neat Flash Browser, since Botfather itself is a Windows-only WinForms app. Grab `NeatFlashBrowser-Setup.exe` — it's the supported, tested path and where most of our own dogfooding happens.</p>
-<p>**Linux (secondary, supported edge case):** A smaller but real slice of users run Botfather under Wine on a Linux VPS specifically to dodge per-seat Windows Server licensing costs. `neatflashbrowser-linux-x64.tar.gz` is built and tested for this setup — see the Linux notes elsewhere in this repo for the required `--no-sandbox` flag and `xdg-settings` default-browser wiring.</p>
-<p>**macOS (untested, community build):** There's no realistic reason to run Botfather on macOS, but if you're the kind of person who'd rather run Flash-era games in a native Mac window than fire up a Windows/Linux VM, a `neatflashbrowser-mac-x64.zip` build is available on the Releases page. It's built from the same `electron-builder` config as the other platforms and includes the macOS Flash plugin, but **it has not been run or verified on an actual Mac** — no signing, no notarization, no one on the team currently has hardware to test it on. Gatekeeper will refuse to open it until you right-click → Open (or run `xattr -cr NeatFlashBrowser.app`) to clear the quarantine flag. Caveat emptor: treat it as a "should work in theory" build, not a supported release, and please open an issue if you try it and hit problems.</p>
+<p>**Windows only.** Botfather itself is a Windows-only WinForms app, so Windows is where nearly everyone runs Neat Flash Browser — and as of v1.5.4 it's the only platform we build and release for. Grab `NeatFlashBrowser-Setup.exe`.</p>
+<p>Linux and macOS builds existed for a while (v1.5.3 shipped both), but have been discontinued: Electron 9 — required for the PPAPI Flash plugin this app depends on — no longer runs at all on current Linux kernels (crashes immediately on startup with a `futex` error). Since that's the underlying runtime on both platforms, there's no viable path to keep shipping Linux or macOS builds without a much larger rewrite (a newer Electron means a newer, incompatible Flash plugin story). If you're on Linux or macOS, your option is running Botfather + Neat Flash Browser inside a Windows VM.</p>
 <h3>System Requirements:</h3>
-<p>Windows 10 or Windows 11 (64-bit) — primary, fully supported</p>
-<p>Linux x64 — supported for the Wine/VPS-hosted Botfather setup</p>
-<p>macOS x64 — unsupported, untested community build; use at your own risk</p>
-<p>The NEAT Botfather (v1.9.5.5 or later for automated URL injection) — Windows or Wine-on-Linux only; there's no macOS build of Botfather itself, so the Mac browser build only makes sense standalone, without the Botfather handoff features</p>
+<p>Windows 10 or Windows 11 (64-bit) — only supported platform</p>
+<p>The NEAT Botfather (v1.9.5.5 or later for automated URL injection)</p>
 <p>Engineered by Evony-Tech for the Neato3 Community.</p>
 
 <h2>Latest Releases</h2>
@@ -174,7 +171,7 @@ Simply download the <code>NeatFlashBrowser-Setup.exe</code> below and run the in
     <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.3.11">View on GitHub</a>
 </div>
 <footer>
-    NeatFlashBrowser v1.5.3 &middot; generated 9/8/2026, 4:23:25 PM by <code>npm run build-home</code> from README.md and the GitHub Releases API. This page is static -- rerun the script to refresh it.
+    NeatFlashBrowser v1.5.4 &middot; generated 10/18/2026, 6:11:04 PM by <code>npm run build-home</code> from README.md and the GitHub Releases API. This page is static -- rerun the script to refresh it.
 </footer>
 </div>
 </body>

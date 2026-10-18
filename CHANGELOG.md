@@ -1,6 +1,26 @@
 Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+## [1.5.4] - 2026-10-18
+
+### Summary
+Bug fix release: startup no longer silently opens a second tab, and macOS/Linux builds are
+retired as a going-forward platform target now that Electron 9 doesn't run on current Linux
+kernels — Windows is the only platform we build and release for.
+
+### Fixed
+- **No more surprise second tab on launch:** Previously, if Botfather was already running on
+  `localhost:8025`, the browser auto-opened its dashboard as a second tab ~1.2s after startup
+  whenever it was launched without a `--url` argument. Startup now only ever opens exactly one
+  tab: the passed `--url` if launched via a Botfather handoff, otherwise the local `home.html`
+  (README + Releases) — nothing else. The Botfather dashboard is still reachable via the manual
+  🤖 toolbar button.
+
+### Changed
+- **Windows-only going forward:** Electron 9 no longer runs on current Linux kernels (crashes
+  immediately with a `futex` error), so Linux and macOS builds are no longer maintained or
+  released. This release ships Windows-only; see README for details.
+
 ## [1.5.3] - 2026-09-05
 
 ### Summary
