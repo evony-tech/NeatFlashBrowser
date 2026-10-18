@@ -315,25 +315,14 @@ app.on('ready',   () => {
 	
     sendWindow("version", app.getVersion());
 
-	// --- BOTFATHER AUTO-PROBE ---
-	// If Botfather is already running on :8025, auto-open its tab on startup
-	// (only when no --url was passed so we don't override a game link launch)
-	if (safeUrl === 'none') {
-		const http = require('http');
-		setTimeout(() => {
-			const probe = http.get('http://localhost:8025/', (res) => {
-				if (res.statusCode < 500 && mainWindow && !mainWindow.isDestroyed()) {
-					mainWindow.webContents.send('open-new-tab', {
-						url: encodeURIComponent('http://localhost:8025/'),
-						title: encodeURIComponent('🤖 Botfather Dashboard'),
-						isBotfather: false
-					});
-				}
-			});
-			probe.on('error', () => {}); // Botfather not running — silent no-op
-			probe.setTimeout(1500, () => { probe.abort(); });
-		}, 1200); // Wait for renderer to be ready
-	}
+	// --- BOTFATHER AUTO-PROBE: DISABLED ---
+	// Previously, if Botfather was already running on :8025, this auto-opened its dashboard as a
+	// second tab ~1.2s after startup whenever no --url was passed — surprising a user who just
+	// wants a single window. Per explicit request, startup now only ever shows exactly one tab:
+	// - launched with --url=...   -> open only that URL (handled in browser.html's router)
+	// - launched with no --url    -> show the local home.html (README + Releases), nothing else
+	// Botfather's dashboard is still reachable manually via the 🤖 toolbar button in browser.html,
+	// which pings :8025 itself and opens the tab only on an explicit user click.
 
     mainWindow.on('closed', () => {
         mainWindow = null;
