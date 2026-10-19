@@ -74,6 +74,21 @@
 
 <h2>Latest Releases</h2>
 <div class="release">
+    <h3>v1.5.4 - Fix startup auto-tab, Windows-only going forward <span class="tag">v1.5.4</span></h3>
+    <div class="release-date">October 18, 2026</div>
+    <div class="release-body"><h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>No more surprise second tab on launch:</strong> previously, if Botfather was already running on <code>localhost:8025</code>, the browser auto-opened its dashboard as a second tab ~1.2s after startup whenever launched without <code>--url</code>. Startup now opens exactly one tab: the passed <code>--url</code> if launched via a Botfather handoff, otherwise the local home page. The Botfather dashboard is still reachable via the manual 🤖 toolbar button.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>Windows-only going forward.</strong> Electron 9 no longer runs on current Linux kernels (crashes immediately with a <code>futex</code> error), so Linux and macOS builds are discontinued — this and future releases ship Windows-only.</li>
+</ul>
+<p>See CHANGELOG.md for full details.</p>
+</div>
+    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/v1.5.4">View on GitHub</a>
+</div>
+<div class="release">
     <h3>v1.5.3 - Manual proxies, offline home page, address bar autofill <span class="tag">v1.5.3</span></h3>
     <div class="release-date">September 5, 2026</div>
     <div class="release-body"><h3 id="summary">Summary</h3>
@@ -148,30 +163,8 @@ Simply download the <code>NeatFlashBrowser-Setup.exe</code> below and run the in
 </div>
     <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.4.1">View on GitHub</a>
 </div>
-<div class="release">
-    <h3>v1.3.11 - The Copy Paste Update <span class="tag">1.3.11</span></h3>
-    <div class="release-date">May 14, 2026</div>
-    <div class="release-body"><h2 id="1311---2026-05-14">[1.3.11] - 2026-05-14</h2>
-<h3 id="summary">Summary</h3>
-<p>This update restores essential right-click functionality inside the browser tabs, giving users back their native copy, cut, and paste controls that were previously blocked by the sandboxed webviews.</p>
-<h3 id="added">Added</h3>
-<ul>
-<li><strong>Smart Context Menu:</strong> Implemented a native right-click menu across all active browser tabs. The menu is dynamically context-aware:<ul>
-<li>Displays <strong>Copy</strong> only when text is actively highlighted.</li>
-<li>Displays <strong>Cut</strong> and <strong>Paste</strong> only when clicking inside an editable text field (e.g., login screens, chat boxes, or forms).</li>
-<li>Always provides a <strong>Select All</strong> option for quick data highlighting.</li>
-</ul>
-</li>
-</ul>
-<h3 id="fixed">Fixed</h3>
-<ul>
-<li><strong>Right-Click Swallowing:</strong> Bypassed a core Chromium sandboxing limitation where the inner <code>&lt;webview&gt;</code> tags were completely ignoring right-click events, preventing users from easily copying data or pasting complex passwords into the Evony client or Botfather dashboards.</li>
-</ul>
-</div>
-    <a class="release-link" href="https://github.com/evony-tech/NeatFlashBrowser/releases/tag/1.3.11">View on GitHub</a>
-</div>
 <footer>
-    NeatFlashBrowser v1.5.4 &middot; generated 10/18/2026, 6:11:04 PM by <code>npm run build-home</code> from README.md and the GitHub Releases API. This page is static -- rerun the script to refresh it.
+    NeatFlashBrowser v1.5.5 &middot; generated 10/18/2026, 7:38:05 PM by <code>npm run build-home</code> from README.md and the GitHub Releases API. This page is static -- rerun the script to refresh it.
 </footer>
 </div>
 </body>

@@ -4,7 +4,7 @@
   "description": "Browser For Flash Player Games",
   "homepage": "http://neato3.com/neatflashbrowser",
   "author": "Evony-Tech",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
@@ -70,37 +70,10 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32"
-          ]
-        }
-      ]
-    },
-    "mac": {
-    "executableName": "NeatFlashBrowser",
-    "category": "public.app-category.utilities",
-    "target": [
-      {
-        "target": "zip",
-        "arch": [
-          "x64"
-        ]
-      }
-    ],
-    "artifactName": "neatflashbrowser-mac-${arch}.${ext}"
-  },
-  "linux": {
-      "executableName": "NeatFlashBrowser",
-      "category": "Network",
-      "target": [
-        {
-          "target": "tar.gz",
-          "arch": [
             "x64"
           ]
         }
-      ],
-      "artifactName": "neatflashbrowser-linux-${arch}.${ext}"
+      ]
     },
     "nsis": {
       "include": "installer.nsh",

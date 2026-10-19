@@ -1,6 +1,19 @@
 Changelog
 All notable changes to Neat Flash Browser will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
+## [1.5.5] - 2026-10-18
+
+### Fixed
+- **Flash plugin was completely missing from v1.5.4's Windows installer.** The move to building
+  on the Debian dev machine skipped the manual "place `pepflashplayer64.dll` in `flashver/` before
+  building" step documented in the README — nobody had copied the Windows Flash DLL onto that box,
+  so `npm run build` silently packaged zero Flash plugin for Windows. v1.5.4 is pulled/superseded;
+  this release has the DLL correctly bundled and was verified present inside the packaged
+  `app.asar.unpacked/flashver/` before uploading.
+- Dropped the 32-bit (`ia32`) Windows target. There's no `pepflashplayer32.dll` available to ship
+  with it, and the README already states 64-bit Windows 10/11 is the supported requirement, so a
+  32-bit build would just be another silently-broken (no Flash) variant.
+
 ## [1.5.4] - 2026-10-18
 
 ### Summary
